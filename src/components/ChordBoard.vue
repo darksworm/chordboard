@@ -507,7 +507,7 @@ onUnmounted(() => {
               class="chord-item"
               :style="{
                 top: `${chord.position.y}px`,
-                width: `${GRID_CELL_WIDTH - 20}px`,
+                width: `${GRID_CELL_WIDTH}px`,
                 height: `${GRID_CELL_HEIGHT}px`
               }"
               :ref="el => el && setupDraggable(el as HTMLElement, chord.id)"
@@ -579,7 +579,7 @@ onUnmounted(() => {
   height: 25px;
   cursor: move;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-  margin-right: 2px;
+  margin-right: 0;
   position: relative;
   z-index: 1;
 }
@@ -607,7 +607,7 @@ onUnmounted(() => {
   border: 1px solid #ccc;
   border-top: none;
   background-color: #f9f9f9;
-  margin-right: 2px;
+  margin-right: 0;
 }
 
 
@@ -627,6 +627,7 @@ onUnmounted(() => {
   justify-content: center;
   box-sizing: border-box;
   left: 0;
+  margin-right: -10px; /* Compensate for the column-content padding */
 }
 
 .chord-item:hover {
