@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import ChordDisplay from '../components/ChordDisplay.vue'
+import ChordBoard from '../components/ChordBoard.vue'
 </script>
 
 <template>
   <main>
-    <ChordDisplay />
+    <ChordBoard />
   </main>
 </template>
