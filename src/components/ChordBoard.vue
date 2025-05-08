@@ -19,6 +19,7 @@ interface ChordItem {
 }
 
 const chordInput = ref('');
+const inputRef = ref<HTMLInputElement | null>(null);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const gridRef = ref<HTMLElement | null>(null);
@@ -120,6 +121,11 @@ const handleChordSubmit = async () => {
   }
 
   isLoading.value = false;
+
+  // Refocus on the input element
+  setTimeout(() => {
+    inputRef.value?.focus();
+  }, 0);
 };
 
 
@@ -215,20 +221,16 @@ onUnmounted(() => {
     <div class="chord-search">
       <form @submit.prevent="handleChordSubmit">
         <input
+          ref="inputRef"
           v-model="chordInput"
           type="text"
           placeholder="Enter chord name (e.g., Am, F#maj, G7)"
           :disabled="isLoading"
         />
-        <button type="submit" :disabled="isLoading">
-          {{ isLoading ? 'Loading...' : 'Search Chord' }}
-        </button>
       </form>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </div>
 
-
-    <h2 class="grid-title">Chord Pinboard - Search to add chords</h2>
     <div ref="gridRef" class="chord-grid">
       <div
         v-for="chord in chords"
@@ -264,15 +266,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   padding: 1rem;
-}
-
-.grid-title {
-  font-size: 1.5rem;
-  color: #333;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  text-align: center;
-  width: 100%;
 }
 
 .chord-grid {
