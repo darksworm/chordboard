@@ -277,9 +277,36 @@ const adjustColumnCount = () => {
         chords: []
       });
     }
+  } else if (currentColumnCount > targetColumnCount) {
+    // If we have too many columns, we'll only remove empty columns from the end
+    // This preserves user data when the screen is resized smaller
+
+    // Find the highest index of a column that has chords
+    let highestNonEmptyColumnIndex = -1;
+    for (let i = columns.value.length - 1; i >= 0; i--) {
+      if (columns.value[i].chords.length > 0) {
+        highestNonEmptyColumnIndex = i;
+        break;
+      }
+    }
+
+    // Calculate how many empty columns we can safely remove
+    // We need to keep at least targetColumnCount columns or up to the highest non-empty column index + 1
+    const minColumnsToKeep = Math.max(targetColumnCount, highestNonEmptyColumnIndex + 1);
+
+    // Remove empty columns from the end, but ensure we keep at least minColumnsToKeep
+    if (currentColumnCount > minColumnsToKeep) {
+      // Only remove columns that are empty and beyond the minimum count
+      columns.value = columns.value.filter((column, index) => {
+        return index < minColumnsToKeep || column.chords.length > 0;
+      });
+
+      // Update the index of all columns
+      columns.value.forEach((column, index) => {
+        column.index = index;
+      });
+    }
   }
-  // If we have too many columns, we'll keep them for now
-  // This preserves user data in case the window is temporarily resized smaller
 };
 
 // Computed property for the total width of all columns
@@ -457,13 +484,6 @@ onUnmounted(() => {
             <div class="column-drag-handle">
               <span class="drag-icon">≡</span>
             </div>
-            <button
-              class="add-column-button"
-              @click="addColumn(columnIndex + 1)"
-              title="Add column"
-            >
-              +
-            </button>
           </div>
 
           <div class="column-content">
@@ -491,18 +511,6 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Add column button at the end -->
-        <button
-          class="add-column-button end-button"
-          @click="addColumn(columns.length)"
-          title="Add column"
-          :style="{
-            left: `${columns.length * GRID_CELL_WIDTH + 10}px`
-          }"
-          v-if="columns.length < gridColumns.value"
-        >
-          +
-        </button>
       </div>
     </div>
   </div>
@@ -525,7 +533,8 @@ onUnmounted(() => {
   border: 1px dashed #ccc;
   border-radius: 8px;
   margin-top: 0.5rem;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: #f9f9f9;
 }
 
@@ -541,30 +550,38 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-right: 1px dashed #ccc;
+  background-color: transparent;
 }
 
 .column-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 8px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border-bottom: 1px solid #ddd;
-  height: 40px;
+  padding: 4px 8px;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  height: 25px;
   cursor: move;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  margin-right: 2px;
+  position: relative;
+  z-index: 1;
 }
 
 .column-drag-handle {
   display: flex;
   align-items: center;
   cursor: move;
+  width: 100%;
+  justify-content: center;
 }
 
 .drag-icon {
-  font-size: 20px;
-  color: #666;
+  font-size: 16px;
+  color: #555;
 }
 
 .column-content {
@@ -574,32 +591,12 @@ onUnmounted(() => {
   overflow: visible;
   background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
   background-size: v-bind('`100% ${GRID_CELL_HEIGHT}px`');
+  border: 1px solid #ccc;
+  border-top: none;
+  background-color: #f9f9f9;
+  margin-right: 2px;
 }
 
-.add-column-button {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.add-column-button:hover {
-  opacity: 1;
-}
-
-.add-column-button.end-button {
-  position: absolute;
-  top: 10px;
-}
 
 .chord-item {
   position: absolute;
