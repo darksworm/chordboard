@@ -8,4 +8,4 @@ In the end you have smorgasbord of chords.
 
 # Pitch
 The app is a web app that allows users to create custom boards with guitar chords of their choosing. 
-The app will be built using React. The app will be open source and will be available on GitHub.
+The app will be built using Vue. The app will be open source and will be available on GitHub.

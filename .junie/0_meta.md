@@ -9,6 +9,7 @@ Welcome to the documentation entrypoint for the ChordBoard project.
 []: # ├── 2_features.md → documentation of implemented and approved features
 []: # ├── 3_coding.md → coding style and rules
 []: # ├── 4_structure.md → high level structure of the code, use to locate code
+[]: # ├── 5_environment.md → development environment description
 []: # └── 9_status.md → high level description of the current work / feature in progress
 
 ## Rules
