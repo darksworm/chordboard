@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Chord } from '@pencilcool/vexchords';
+import { ChordBox } from 'vexchords';
 
 // Define the available chords
 const chords = {
@@ -50,7 +50,7 @@ const renderChord = () => {
   chordContainer.value.innerHTML = '';
 
   // Create new chord
-  const chord = new Chord(chordContainer.value, {
+  const chord = new ChordBox(chordContainer.value, {
     width: 200,
     height: 240,
     showTuning: true

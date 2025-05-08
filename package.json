@@ -14,7 +14,7 @@
     "lint": "run-s lint:*"
   },
   "dependencies": {
-    "@pencilcool/vexchords": "^1.2.2",
+    "vexchords": "github:0xfe/vexchords",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },
