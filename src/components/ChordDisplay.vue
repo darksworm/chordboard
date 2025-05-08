@@ -105,6 +105,31 @@ const renderChord = (apiChordData?: any) => {
     // Format: "001200" where 0 means no finger and 1-4 represent index, middle, ring, pinky
     const fingers = firstPosition.fingers ? firstPosition.fingers.split('') : null;
 
+    // Parse barres if present - do this first to identify barred positions
+    const barres: { fromString: number; toString: number; fret: number }[] = [];
+    // Track which strings and frets are part of barres
+    const barredPositions = new Set<string>();
+
+    if (firstPosition.barres) {
+      const barresFrets = firstPosition.barres.split(',').map(Number);
+      barresFrets.forEach(fret => {
+        // Find the range of strings that have this fret
+        let fromString = 1;
+        let toString = 6;
+        frets.forEach((f, i) => {
+          if (parseInt(f, 10) === fret) {
+            const string = 6 - i;
+            fromString = Math.max(fromString, string);
+            toString = Math.min(toString, string);
+            // Mark this position as part of a barre
+            barredPositions.add(`${string}-${fret}`);
+          }
+        });
+        barres.push({ fromString, toString, fret: fret });
+      });
+    }
+
+    // Now map frets to positions, excluding those that are part of barres
     const chordPositions = frets.map((fret, index) => {
       // In vexchords, strings are 1-6 where 1 is high E and 6 is low E
       // In the API response, the first character is the low E string
@@ -128,25 +153,19 @@ const renderChord = (apiChordData?: any) => {
       }
 
       return [string, fretNum];
-    }).filter(pos => pos[1] !== 0); // Filter out open strings
+    }).filter(pos => {
+      // Filter out open strings
+      if (pos[1] === 0) return false;
 
-    // Parse barres if present
-    const barres: { fromString: number; toString: number; fret: number }[] = [];
-    if (firstPosition.barres) {
-      const barresFrets = firstPosition.barres.split(',').map(Number);
-      barresFrets.forEach(fret => {
-        // Find the range of strings that have this fret
-        let fromString = 6;
-        let toString = 1;
-        frets.forEach((f, i) => {
-          if (parseInt(f, 10) === fret) {
-            fromString = Math.min(fromString, 6 - i);
-            toString = Math.max(toString, 6 - i);
-          }
-        });
-        barres.push({ fromString, toString, fret });
-      });
-    }
+      // Filter out positions that are part of a barre
+      if (typeof pos[1] === 'number' && barredPositions.has(`${pos[0]}-${pos[1]}`)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    console.log({chordPositions, barres, apiChordData});
 
     // Draw the chord
     chord.draw({
@@ -167,6 +186,8 @@ const renderChord = (apiChordData?: any) => {
 
     // Convert positions to the format expected by vexchords
     const chordPositions = chordData.positions.map((pos) => [pos.string, pos.fret]);
+
+    console.log({chordPositions, barres: chordData.barres});
 
     // Draw the chord
     chord.draw({

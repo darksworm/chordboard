@@ -12,6 +12,12 @@ This document contains a high-level description of the current work and features
 
 ### Recent Changes
 
+#### Barre Chord Display Enhancement
+- Improved the rendering of barre chords from the API
+- Added logic to properly identify and display barres across multiple strings
+- Excluded individual finger positions that are part of a barre to avoid duplication
+- Ensured proper display of complex chord shapes with barres
+
 #### API Integration for Chord Display
 - Added a text input field for users to enter chord names
 - Implemented API integration to fetch chord data from the Guitar Chord HTTP API
