@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { fetchChordData, type Chord as ChordType } from '../services/chordserverapi';
 import Chord from './Chord.vue';
 import {
@@ -7,10 +7,15 @@ import {
   dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
+// Define grid cell size
+const GRID_CELL_WIDTH = 220; // Width of a grid cell in pixels
+const GRID_CELL_HEIGHT = 300; // Height of a grid cell in pixels
+
 interface ChordItem {
   id: string;
   chord: ChordType;
   position: { x: number; y: number };
+  gridPosition: { row: number; col: number };
 }
 
 const chordInput = ref('');
@@ -21,6 +26,52 @@ const gridRef = ref<HTMLElement | null>(null);
 const currentChord = ref<ChordType | null>(null);
 const chords = ref<ChordItem[]>([]);
 const cleanupFunctions = ref<(() => void)[]>([]);
+
+// Calculate the number of columns that can fit in the grid
+const gridColumns = ref(0);
+const gridRows = ref(0);
+
+// Function to calculate the nearest grid position
+const calculateGridPosition = (x: number, y: number) => {
+  const col = Math.max(0, Math.min(Math.floor(x / GRID_CELL_WIDTH), gridColumns.value - 1));
+  const row = Math.max(0, Math.min(Math.floor(y / GRID_CELL_HEIGHT), gridRows.value - 1));
+  return { row, col };
+};
+
+// Function to convert grid position to pixel coordinates
+const gridToPixelPosition = (row: number, col: number) => {
+  return {
+    x: col * GRID_CELL_WIDTH,
+    y: row * GRID_CELL_HEIGHT
+  };
+};
+
+// Function to find an empty grid position
+const findEmptyGridPosition = () => {
+  // Create a 2D array to track occupied positions
+  const occupiedPositions: boolean[][] = Array(gridRows.value)
+    .fill(false)
+    .map(() => Array(gridColumns.value).fill(false));
+
+  // Mark occupied positions
+  chords.value.forEach(chord => {
+    if (chord.gridPosition.row < gridRows.value && chord.gridPosition.col < gridColumns.value) {
+      occupiedPositions[chord.gridPosition.row][chord.gridPosition.col] = true;
+    }
+  });
+
+  // Find the first empty position
+  for (let row = 0; row < gridRows.value; row++) {
+    for (let col = 0; col < gridColumns.value; col++) {
+      if (!occupiedPositions[row][col]) {
+        return { row, col };
+      }
+    }
+  }
+
+  // If no empty position found, return the first position
+  return { row: 0, col: 0 };
+};
 
 // Generate a unique ID for each chord
 const generateId = () => `chord-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -42,15 +93,18 @@ const handleChordSubmit = async () => {
   } else {
     currentChord.value = fetchedChord.value;
 
+    // Find an empty grid position for the new chord
+    const gridPosition = findEmptyGridPosition();
+
+    // Convert grid position to pixel coordinates
+    const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
+
     // Automatically add the chord to the pinboard
-    // Add the chord to the grid with a random position
     const newChord: ChordItem = {
       id: generateId(),
       chord: fetchedChord.value,
-      position: {
-        x: Math.random() * (window.innerWidth - 250),
-        y: Math.random() * (window.innerHeight - 300)
-      }
+      position: pixelPosition,
+      gridPosition: gridPosition
     };
 
     chords.value.push(newChord);
@@ -85,9 +139,30 @@ const setupDraggable = (element: HTMLElement, chordId: string) => {
   cleanupFunctions.value.push(cleanup);
 };
 
+// Function to update grid dimensions
+const updateGridDimensions = () => {
+  if (!gridRef.value) return;
+
+  const gridWidth = gridRef.value.clientWidth;
+  const gridHeight = gridRef.value.clientHeight;
+
+  gridColumns.value = Math.floor(gridWidth / GRID_CELL_WIDTH);
+  gridRows.value = Math.floor(gridHeight / GRID_CELL_HEIGHT);
+};
+
 // Set up drag and drop functionality
 onMounted(() => {
   if (!gridRef.value) return;
+
+  // Calculate grid dimensions
+  updateGridDimensions();
+
+  // Add window resize listener to recalculate grid dimensions
+  const handleResize = () => {
+    updateGridDimensions();
+  };
+  window.addEventListener('resize', handleResize);
+  cleanupFunctions.value.push(() => window.removeEventListener('resize', handleResize));
 
   // Make the grid a drop target
   const cleanup = dropTargetForElements({
@@ -99,11 +174,20 @@ onMounted(() => {
       const chordIndex = chords.value.findIndex(c => c.id === chordId);
       if (chordIndex === -1) return;
 
+      // Get the grid position from the drop location
+      const gridRect = gridRef.value!.getBoundingClientRect();
+      const relativeX = location.clientX - gridRect.left;
+      const relativeY = location.clientY - gridRect.top;
+
+      // Calculate the nearest grid position
+      const gridPosition = calculateGridPosition(relativeX, relativeY);
+
+      // Convert grid position to pixel coordinates
+      const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
+
       // Update the chord's position
-      chords.value[chordIndex].position = {
-        x: location.clientX - 100, // Center the chord
-        y: location.clientY - 120  // Center the chord
-      };
+      chords.value[chordIndex].position = pixelPosition;
+      chords.value[chordIndex].gridPosition = gridPosition;
     }
   });
 
@@ -147,7 +231,9 @@ onUnmounted(() => {
         class="chord-item"
         :style="{
           left: `${chord.position.x}px`,
-          top: `${chord.position.y}px`
+          top: `${chord.position.y}px`,
+          width: `${GRID_CELL_WIDTH}px`,
+          height: `${GRID_CELL_HEIGHT}px`
         }"
         :ref="el => el && setupDraggable(el, chord.id)"
       >
@@ -192,6 +278,10 @@ onUnmounted(() => {
   margin-top: 0.5rem;
   overflow: hidden;
   background-color: #f9f9f9;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: v-bind('`${GRID_CELL_WIDTH}px ${GRID_CELL_HEIGHT}px`');
 }
 
 .chord-item {
@@ -202,13 +292,19 @@ onUnmounted(() => {
   padding: 0.5rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   cursor: move;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .chord-item:hover {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   z-index: 2;
+  transform: scale(1.02);
 }
 
 .remove-button {
