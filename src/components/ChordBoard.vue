@@ -49,6 +49,7 @@ const handleChordSubmit = async () => {
     </div>
 
     <Chord
+      v-if="currentChord"
       :chord="currentChord"
     />
   </div>

@@ -14,7 +14,7 @@ const chordTitle = ref('');
 
 // Function to render the chord
 const renderChord = () => {
-  if (!chordContainer.value) return;
+  if (!chordContainer.value || !props.chord) return;
 
   // Clear previous chord
   chordContainer.value.innerHTML = '';
@@ -27,6 +27,8 @@ const renderChord = () => {
   });
 
   // Handle API response format
+  if (!props.chord.positions || props.chord.positions.length === 0) return;
+
   const firstPosition = props.chord.positions[0];
 
   // Update chord title
@@ -110,11 +112,13 @@ const renderChord = () => {
 };
 
 // Watch for changes in props to re-render the chord
-watch(() => props.chord, renderChord, {immediate: false});
+watch(() => props.chord, renderChord, {immediate: true});
 
 // Initialize the chord display when the component is mounted
 onMounted(() => {
-  renderChord();
+  if (props.chord) {
+    renderChord();
+  }
 });
 </script>
 
