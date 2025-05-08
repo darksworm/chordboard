@@ -23,6 +23,16 @@ This document contains a high-level description of the current work and features
    - Replaced @pencilcool/vexchords with the official vexchords library from 0xfe (https://github.com/0xfe/vexchords)
    - Updated the ChordDisplay component to use the new library
 
+2. **Fixed Chord Display**
+   - Fixed the chord display to properly show finger positions
+   - Updated the chord rendering code to correctly use the vexchords library API
+   - Resolved errors that occurred during component mounting and when clicking chord buttons
+
+3. **Fixed Finger Position Offset**
+   - Corrected the finger position display on the chord diagram
+   - Fixed an issue where finger positions were showing on the wrong fret (offset by one)
+   - Updated the chord rendering parameters to correctly position fingers on the appropriate frets
+
 ## Proposed Features
 
 *No features have been proposed yet.*

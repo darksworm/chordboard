@@ -25,12 +25,9 @@ const chords = {
   Fmaj: {
     name: 'F Major',
     positions: [
-      { fret: 1, string: 1 },
-      { fret: 1, string: 2 },
       { fret: 2, string: 3 },
       { fret: 3, string: 4 },
       { fret: 3, string: 5 },
-      { fret: 1, string: 6 }
     ],
     barres: [{ fromString: 6, toString: 1, fret: 1 }]
   }
@@ -59,11 +56,15 @@ const renderChord = () => {
   // Get the chord data
   const chordData = chords[currentChord.value as keyof typeof chords];
 
+  // Convert positions to the format expected by vexchords
+  const chordPositions = chordData.positions.map((pos) => [pos.string, pos.fret]);
+
   // Draw the chord
   chord.draw({
-    positions: chordData.positions,
+    chord: chordPositions,
     barres: chordData.barres,
-    title: chordData.name
+    position: 0,
+    positionText: 0
   });
 };
 
