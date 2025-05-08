@@ -4,17 +4,17 @@ import { type Chord as ChordType } from '../services/chordserverapi';
 export const GRID_CELL_WIDTH = 220; // Width of a grid cell in pixels
 export const GRID_CELL_HEIGHT = 280; // Height of a grid cell in pixels
 
-export interface ChordItem {
+export interface ChordInGrid {
   id: string;
   chord: ChordType;
   position: { x: number; y: number };
   gridPosition: { row: number; col: number };
 }
 
-export interface Column {
+export interface GridColumn {
   id: string;
   index: number;
-  chords: ChordItem[];
+  chords: ChordInGrid[];
 }
 
 // Helper function to generate a unique ID

@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import Chord from './Chord.vue';
 
 // Import types and composables
-import { GRID_CELL_WIDTH, GRID_CELL_HEIGHT, type Column } from '../types/chord-board';
+import { GRID_CELL_WIDTH, GRID_CELL_HEIGHT, type GridColumn } from '../types/chord-board';
 import { useGridCalculations } from '../composables/useGridCalculations';
 import { useColumnManagement } from '../composables/useColumnManagement';
 import { useChordManagement } from '../composables/useChordManagement';
@@ -12,7 +12,7 @@ import { useDragAndDrop } from '../composables/useDragAndDrop';
 // Setup refs
 const inputRef = ref<HTMLInputElement | null>(null);
 const gridRef = ref<HTMLElement | null>(null);
-const columns = ref<Column[]>([]);
+const columns = ref<GridColumn[]>([]);
 
 // Initialize composables with dependencies
 const {
@@ -27,7 +27,7 @@ const {
 const {
   adjustColumnCount,
   moveColumn
-} = useColumnManagement(columns, gridColumns, updateGridDimensions);
+} = useColumnManagement(columns, gridColumns);
 
 const {
   chordInput,
@@ -37,7 +37,7 @@ const {
   removeChord,
   moveChord,
   swapChords
-} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, adjustColumnCount);
+} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition);
 
 const {
   setupDraggable,

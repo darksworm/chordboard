@@ -1,15 +1,14 @@
 import { type Ref } from 'vue';
-import { type Column, generateId } from '../types/chord-board';
+import { type GridColumn, generateId } from '../types/chord-board';
 
 export function useColumnManagement(
-  columns: Ref<Column[]>,
+  columns: Ref<GridColumn[]>,
   gridColumns: Ref<number>,
-  updateGridDimensions: () => void
 ) {
   // Function to add a new column at the specified index
   const addColumn = (index: number) => {
     // Create a new column
-    const newColumn: Column = {
+    const newColumn: GridColumn = {
       id: generateId(),
       index: index,
       chords: []

@@ -1,7 +1,7 @@
 import { ref, type Ref, computed } from 'vue';
-import { GRID_CELL_WIDTH, GRID_CELL_HEIGHT, type Column } from '../types/chord-board';
+import { GRID_CELL_WIDTH, GRID_CELL_HEIGHT, type GridColumn } from '../types/chord-board';
 
-export function useGridCalculations(gridRef: Ref<HTMLElement | null>, columns: Ref<Column[]>) {
+export function useGridCalculations(gridRef: Ref<HTMLElement | null>, columns: Ref<GridColumn[]>) {
   // Calculate the number of columns and rows that can fit in the grid
   const gridColumns = ref(0);
   const gridRows = ref(0);

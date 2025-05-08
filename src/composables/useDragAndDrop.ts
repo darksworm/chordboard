@@ -3,10 +3,10 @@ import {
   draggable,
   dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import { type Column } from '../types/chord-board';
+import { type GridColumn } from '../types/chord-board';
 
 export function useDragAndDrop(
-  columns: Ref<Column[]>,
+  columns: Ref<GridColumn[]>,
   gridRef: Ref<HTMLElement | null>,
   isPositionOccupied: (row: number, col: number, excludeChordId?: string) => boolean,
   gridToPixelPosition: (row: number, col: number) => { x: number; y: number },

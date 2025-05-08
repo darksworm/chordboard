@@ -1,12 +1,11 @@
 import { ref, type Ref } from 'vue';
 import { fetchChordData, type Chord as ChordType } from '../services/chordserverapi';
-import { type ChordItem, type Column, generateChordId } from '../types/chord-board';
+import { type ChordInGrid, type GridColumn, generateChordId } from '../types/chord-board';
 
 export function useChordManagement(
-  columns: Ref<Column[]>,
+  columns: Ref<GridColumn[]>,
   findEmptyGridPosition: (columnIndex?: number) => { row: number; col: number },
   gridToPixelPosition: (row: number, col: number) => { x: number; y: number },
-  adjustColumnCount: () => void
 ) {
   const chordInput = ref('');
   const isLoading = ref(false);
@@ -31,11 +30,6 @@ export function useChordManagement(
     } else {
       currentChord.value = fetchedChord.value;
 
-      // Ensure we have columns available
-      if (columns.value.length === 0) {
-        adjustColumnCount();
-      }
-
       // Find the column with the fewest chords
       let columnIndex = 0;
       let minChords = Infinity;
@@ -55,7 +49,7 @@ export function useChordManagement(
       const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
 
       // Automatically add the chord to the pinboard
-      const newChord: ChordItem = {
+      const newChord: ChordInGrid = {
         id: generateChordId(),
         chord: fetchedChord.value,
         position: pixelPosition,
