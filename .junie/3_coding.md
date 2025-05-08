@@ -14,6 +14,6 @@ This document contains coding style and rules for the ChordBoard project.
 - Use `===` and `!==` instead of `==` and `!=`.
 - Don't write tests unless explicitly asked for.
 - Don't write comments unless the intent of the code is opaque.
-- Prefer separating "business logic" from the "presentation logic" (e.g. in React, prefer separating the component from the business logic).
+- Prefer separating "business logic" from the "presentation logic"
 - Prefer using functional programming over OOP.
-- Commits should be be written using the semantic commit format.
+- Commits should be written using the semantic commit format.
