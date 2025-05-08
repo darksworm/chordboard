@@ -53,6 +53,15 @@ const gridToPixelPosition = (row: number, col: number) => {
   };
 };
 
+// Function to check if a grid position is occupied
+const isPositionOccupied = (row: number, col: number, excludeChordId?: string) => {
+  return chords.value.some(chord =>
+    chord.gridPosition.row === row &&
+    chord.gridPosition.col === col &&
+    (excludeChordId === undefined || chord.id !== excludeChordId)
+  );
+};
+
 // Function to find an empty grid position
 const findEmptyGridPosition = () => {
   // Create a 2D array to track occupied positions
@@ -186,6 +195,9 @@ onMounted(() => {
       const chordIndex = chords.value.findIndex(c => c.id === chordId);
       if (chordIndex === -1) return;
 
+      // Store original position in case we need to revert
+      const originalGridPosition = { ...chords.value[chordIndex].gridPosition };
+
       // Get the grid position from the drop location
       const gridRect = gridRef.value!.getBoundingClientRect();
       const relativeX = location.current.input.clientX - gridRect.left;
@@ -194,12 +206,18 @@ onMounted(() => {
       // Calculate the nearest grid position
       const gridPosition = calculateGridPosition(relativeX, relativeY);
 
-      // Convert grid position to pixel coordinates
-      const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
-
-      // Update the chord's position
-      chords.value[chordIndex].position = pixelPosition;
-      chords.value[chordIndex].gridPosition = gridPosition;
+      // Check if the target position is already occupied by another chord
+      if (isPositionOccupied(gridPosition.row, gridPosition.col, chordId)) {
+        // Position is occupied, revert to original position
+        const pixelPosition = gridToPixelPosition(originalGridPosition.row, originalGridPosition.col);
+        chords.value[chordIndex].position = pixelPosition;
+        chords.value[chordIndex].gridPosition = originalGridPosition;
+      } else {
+        // Position is free, update the chord's position
+        const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
+        chords.value[chordIndex].position = pixelPosition;
+        chords.value[chordIndex].gridPosition = gridPosition;
+      }
     }
   });
 
