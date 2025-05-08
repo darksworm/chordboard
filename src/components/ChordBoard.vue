@@ -44,7 +44,6 @@ const {
 const {
   saveState,
   loadState,
-  clearState,
   setupAutoSave,
   error: persistenceError
 } = useBoardPersistence(columns);
@@ -75,8 +74,8 @@ const swapChordsAndSave = (
   saveState();
 };
 
-const moveColumnAndSave = (columnId: string, sourceIndex: number, targetIndex: number) => {
-  moveColumn(columnId, sourceIndex, targetIndex);
+const moveColumnAndSave = (sourceIndex: number, targetIndex: number) => {
+  moveColumn(sourceIndex, targetIndex);
   // Save state after moving a column
   saveState();
 };
