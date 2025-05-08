@@ -48,38 +48,6 @@ const {
   error: persistenceError
 } = useBoardPersistence(columns);
 
-// Wrap move and swap operations to trigger saving
-const moveChordAndSave = (
-  chordId: string,
-  sourceColumnIndex: number,
-  sourceChordIndex: number,
-  targetColumnIndex: number,
-  targetGridPosition: { row: number; col: number }
-) => {
-  moveChord(chordId, sourceColumnIndex, sourceChordIndex, targetColumnIndex, targetGridPosition);
-  // Save state after moving a chord
-  saveState();
-};
-
-const swapChordsAndSave = (
-  sourceChordId: string,
-  sourceColumnIndex: number,
-  sourceChordIndex: number,
-  targetChordId: string,
-  targetColumnIndex: number,
-  targetChordIndex: number
-) => {
-  swapChords(sourceChordId, sourceColumnIndex, sourceChordIndex, targetChordId, targetColumnIndex, targetChordIndex);
-  // Save state after swapping chords
-  saveState();
-};
-
-const moveColumnAndSave = (sourceIndex: number, targetIndex: number) => {
-  moveColumn(sourceIndex, targetIndex);
-  // Save state after moving a column
-  saveState();
-};
-
 const {
   setupDraggable,
   setupColumnDraggable,
