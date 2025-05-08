@@ -1,5 +1,6 @@
 import { type Ref } from 'vue';
 import { type GridColumn, generateId } from '../types/chord-board';
+import {eventBus} from "@/composables/useEventBus.ts";
 
 export function useColumnManagement(
   columns: Ref<GridColumn[]>,
@@ -55,6 +56,8 @@ export function useColumnManagement(
 
     // Update all column indices
     updateColumnIndices();
+
+    eventBus.emit('command:boardPersistence:save');
   };
 
   return {

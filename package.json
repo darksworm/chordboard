@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.6.1",
+    "mitt": "^3.0.1",
     "neverthrow": "^8.2.0",
     "vexchords": "github:0xfe/vexchords",
     "vue": "^3.5.13",

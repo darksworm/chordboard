@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue';
 import { type GridColumn } from '../types/chord-board';
+import { useEvent } from "@/composables/useEventBus.ts";
 
 const STORAGE_KEY = 'chord-board-state';
 
@@ -74,6 +75,10 @@ export function useBoardPersistence(columns: Ref<GridColumn[]>) {
     };
   };
 
+  useEvent('command:boardPersistence:save', () => {
+    saveState();
+  })
+
   return {
     saveState,
     loadState,
@@ -82,4 +87,10 @@ export function useBoardPersistence(columns: Ref<GridColumn[]>) {
     isLoading,
     error
   };
+}
+
+declare module './useEventBus' {
+  interface EventsMap {
+    'command:boardPersistence:save': void,
+  }
 }

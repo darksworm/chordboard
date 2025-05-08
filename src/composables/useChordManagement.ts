@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue';
 import { fetchChordData, type Chord as ChordType } from '../services/chordserverapi';
 import { type ChordInGrid, type GridColumn, generateChordId } from '../types/chord-board';
+import {eventBus} from "@/composables/useEventBus.ts";
 
 export function useChordManagement(
   columns: Ref<GridColumn[]>,
@@ -77,6 +78,8 @@ export function useChordManagement(
         return;
       }
     }
+
+    eventBus.emit('command:boardPersistence:save');
   };
 
   // Move a chord from one column to another
@@ -101,6 +104,8 @@ export function useChordManagement(
 
     // Add to target column
     columns.value[targetColumnIndex].chords.push(chord);
+
+    eventBus.emit('command:boardPersistence:save');
   };
 
   // Swap positions of two chords
@@ -141,6 +146,8 @@ export function useChordManagement(
     // Add chords back to their new positions
     columns.value[targetColumnIndex].chords.push(sourceChord);
     columns.value[sourceColumnIndex].chords.push(targetChord);
+
+    eventBus.emit('command:boardPersistence:save');
   };
 
   return {

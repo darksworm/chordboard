@@ -90,9 +90,9 @@ const {
   gridRef,
   isPositionOccupied,
   gridToPixelPosition,
-  moveColumnAndSave,
-  moveChordAndSave,
-  swapChordsAndSave
+  moveColumn,
+  moveChord,
+  swapChords
 );
 
 // Variable to store cleanup function for auto-save
