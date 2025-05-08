@@ -234,7 +234,7 @@ const setupColumnDropTarget = (element: HTMLElement, columnId: string, columnInd
   // Make the column content area a drop target for chords
   const cleanup = dropTargetForElements({
     element,
-    onDrop: ({ source }) => {
+    onDrop: ({ source, location }) => {
       const chordId = source.element.getAttribute('data-chord-id');
       if (!chordId) return;
 
@@ -257,14 +257,42 @@ const setupColumnDropTarget = (element: HTMLElement, columnId: string, columnInd
 
       if (!foundChord || sourceColumnIndex === -1 || sourceChordIndex === -1) return;
 
-      // If the chord is already in this column, do nothing
-      if (sourceColumnIndex === columnIndex) return;
+      // Calculate the drop position relative to the column
+      const columnRect = element.getBoundingClientRect();
+      const relativeY = location.current.input.clientY - columnRect.top;
+
+      // Calculate the row based on the Y coordinate
+      const row = Math.floor(relativeY / GRID_CELL_HEIGHT);
+
+      // Create the grid position
+      const gridPosition = { row, col: columnIndex };
+
+      // Check if the position is already occupied (excluding the chord being moved)
+      if (isPositionOccupied(row, columnIndex, chordId)) {
+        // If occupied, find the nearest free position
+        let freeRow = row;
+
+        // Try positions above and below until we find a free one
+        for (let offset = 1; offset < gridRows.value; offset++) {
+          // Try below first
+          if (freeRow + offset < gridRows.value && !isPositionOccupied(freeRow + offset, columnIndex, chordId)) {
+            freeRow = freeRow + offset;
+            break;
+          }
+
+          // Then try above
+          if (freeRow - offset >= 0 && !isPositionOccupied(freeRow - offset, columnIndex, chordId)) {
+            freeRow = freeRow - offset;
+            break;
+          }
+        }
+
+        // Update the grid position with the free row
+        gridPosition.row = freeRow;
+      }
 
       // Remove from source column
       columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
-
-      // Find an empty position in the target column
-      const gridPosition = findEmptyGridPosition(columnIndex);
 
       // Convert grid position to pixel coordinates
       const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
