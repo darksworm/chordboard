@@ -243,7 +243,7 @@ onUnmounted(() => {
           width: `${GRID_CELL_WIDTH}px`,
           height: `${GRID_CELL_HEIGHT}px`
         }"
-        :ref="el => el && setupDraggable(el, chord.id)"
+        :ref="el => el && setupDraggable(el as HTMLElement, chord.id)"
       >
         <button
           @click="removeChord(chord.id)"

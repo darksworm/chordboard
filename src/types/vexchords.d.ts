@@ -6,8 +6,10 @@ declare module 'vexchords' {
     // Add other options as needed
   }
 
+  export type Chord = Array<[number, number | 'x', string?] | [number, number]>;
+
   export interface ChordBoxDrawOptions {
-    chord: Array<[number, number | 'x', string?] | [number, number]>;
+    chord: Chord;
     barres?: Array<{
       fromString: number;
       toString: number;

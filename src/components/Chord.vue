@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {onMounted, ref, watch} from 'vue';
-import {ChordBox} from 'vexchords';
+import {type Chord as VexBoxChord, ChordBox} from 'vexchords';
 import type {Chord} from "@/services/chordserverapi.ts";
 
 // Define props for the component
@@ -104,7 +104,7 @@ const renderChord = () => {
 
   // Draw the chord
   chord.draw({
-    chord: chordPositions,
+    chord: chordPositions as VexBoxChord,
     barres,
     position: 0,
     positionText: 0
@@ -138,7 +138,7 @@ onMounted(() => {
 
 .chord-title {
   font-size: 1.5rem;
-  height:0;
+  height: 0;
   color: #666666;
 }
 </style>
