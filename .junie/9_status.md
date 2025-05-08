@@ -12,7 +12,12 @@ This document contains a high-level description of the current work and features
 
 ### Recent Changes
 
-*No recent changes. All changes have been approved and integrated into implemented features.*
+#### API Integration for Chord Display
+- Added a text input field for users to enter chord names
+- Implemented API integration to fetch chord data from the Guitar Chord HTTP API
+- Updated the chord display to render chords from the API response
+- Added error handling and loading state for API requests
+- Enhanced the UI to display the chord name as a title
 
 ## Proposed Features
 
