@@ -1,7 +1,7 @@
-import { ref, type Ref } from 'vue';
+import { ref, type Ref, onMounted } from 'vue';
 import { fetchChordData, type Chord as ChordType } from '../services/chordserverapi';
 import { type ChordInGrid, type GridColumn, generateChordId } from '../types/chord-board';
-import {eventBus} from "@/composables/useEventBus.ts";
+import {eventBus, useEvent} from "@/composables/useEventBus.ts";
 
 export function useChordManagement(
   columns: Ref<GridColumn[]>,
@@ -82,73 +82,92 @@ export function useChordManagement(
     eventBus.emit('command:boardPersistence:save');
   };
 
-  // Move a chord from one column to another
-  const moveChord = (
-    chordId: string,
-    sourceColumnIndex: number,
-    sourceChordIndex: number,
-    targetColumnIndex: number,
-    targetGridPosition: { row: number; col: number }
-  ) => {
-    // Get the chord from the source column
-    const chord = columns.value[sourceColumnIndex].chords[sourceChordIndex];
+  // Handle chord movement event
+  const handleChordMove = (data: {
+    fromPosition: { colIndex: number, rowIndex: number };
+    toPosition: { colIndex: number, rowIndex: number };
+  }) => {
+    // Find source chord at fromPosition
+    let sourceChord = null;
+    let sourceChordIndex = -1;
+    let sourceColumnIndex = data.fromPosition.colIndex;
 
-    if (!chord) return;
+    // Find the chord at the source position
+    for (let i = 0; i < columns.value[sourceColumnIndex].chords.length; i++) {
+      const chord = columns.value[sourceColumnIndex].chords[i];
+      if (chord.gridPosition.col === data.fromPosition.colIndex &&
+          chord.gridPosition.row === data.fromPosition.rowIndex) {
+        sourceChord = chord;
+        sourceChordIndex = i;
+        break;
+      }
+    }
 
-    // Remove from source column
-    columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
+    if (!sourceChord) return;
 
-    // Update the chord's position
-    chord.gridPosition = targetGridPosition;
-    chord.position = gridToPixelPosition(targetGridPosition.row, targetGridPosition.col);
+    // Find target chord at toPosition (if any)
+    let targetChord = null;
+    let targetChordIndex = -1;
+    let targetColumnIndex = data.toPosition.colIndex;
 
-    // Add to target column
-    columns.value[targetColumnIndex].chords.push(chord);
+    // Find the chord at the target position (if any)
+    for (let i = 0; i < columns.value[targetColumnIndex].chords.length; i++) {
+      const chord = columns.value[targetColumnIndex].chords[i];
+      if (chord.gridPosition.col === data.toPosition.colIndex &&
+          chord.gridPosition.row === data.toPosition.rowIndex) {
+        targetChord = chord;
+        targetChordIndex = i;
+        break;
+      }
+    }
+
+    if (targetChord) {
+      // Handle swap operation
+      // Store the original positions
+      const sourceGridPosition = { ...sourceChord.gridPosition };
+      const targetGridPosition = { ...targetChord.gridPosition };
+
+      // Remove both chords from their columns
+      columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
+
+      // If both chords are in the same column and the target chord is after the source chord,
+      // we need to adjust the index because removing the source chord shifts the array
+      const adjustedTargetIndex = sourceColumnIndex === targetColumnIndex && targetChordIndex > sourceChordIndex
+        ? targetChordIndex - 1
+        : targetChordIndex;
+
+      columns.value[targetColumnIndex].chords.splice(adjustedTargetIndex, 1);
+
+      // Update positions
+      sourceChord.gridPosition = targetGridPosition;
+      sourceChord.position = gridToPixelPosition(targetGridPosition.row, targetGridPosition.col);
+
+      targetChord.gridPosition = sourceGridPosition;
+      targetChord.position = gridToPixelPosition(sourceGridPosition.row, sourceGridPosition.col);
+
+      // Add chords back to their new positions
+      columns.value[targetColumnIndex].chords.push(sourceChord);
+      columns.value[sourceColumnIndex].chords.push(targetChord);
+    } else {
+      // Handle move operation
+      // Remove from source column
+      columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
+
+      // Update the chord's position
+      const newGridPosition = { row: data.toPosition.rowIndex, col: data.toPosition.colIndex };
+      sourceChord.gridPosition = newGridPosition;
+      sourceChord.position = gridToPixelPosition(newGridPosition.row, newGridPosition.col);
+
+      // Add to target column
+      columns.value[targetColumnIndex].chords.push(sourceChord);
+    }
 
     eventBus.emit('command:boardPersistence:save');
   };
 
-  // Swap positions of two chords
-  const swapChords = (
-    sourceChordId: string,
-    sourceColumnIndex: number,
-    sourceChordIndex: number,
-    targetChordId: string,
-    targetColumnIndex: number,
-    targetChordIndex: number
-  ) => {
-    // Get both chords
-    const sourceChord = columns.value[sourceColumnIndex].chords[sourceChordIndex];
-    const targetChord = columns.value[targetColumnIndex].chords[targetChordIndex];
-
-    if (!sourceChord || !targetChord) return;
-
-    // Store the original positions
-    const sourceGridPosition = { ...sourceChord.gridPosition };
-    const targetGridPosition = { ...targetChord.gridPosition };
-
-    // Remove both chords from their columns
-    columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
-    // If both chords are in the same column and the target chord is after the source chord,
-    // we need to adjust the index because removing the source chord shifts the array
-    const adjustedTargetIndex = sourceColumnIndex === targetColumnIndex && targetChordIndex > sourceChordIndex
-      ? targetChordIndex - 1
-      : targetChordIndex;
-    columns.value[targetColumnIndex].chords.splice(adjustedTargetIndex, 1);
-
-    // Update positions
-    sourceChord.gridPosition = targetGridPosition;
-    sourceChord.position = gridToPixelPosition(targetGridPosition.row, targetGridPosition.col);
-
-    targetChord.gridPosition = sourceGridPosition;
-    targetChord.position = gridToPixelPosition(sourceGridPosition.row, sourceGridPosition.col);
-
-    // Add chords back to their new positions
-    columns.value[targetColumnIndex].chords.push(sourceChord);
-    columns.value[sourceColumnIndex].chords.push(targetChord);
-
-    eventBus.emit('command:boardPersistence:save');
-  };
+  onMounted(() => {
+    useEvent('command:chordManagement:move', handleChordMove);
+  });
 
   return {
     chordInput,
@@ -157,7 +176,14 @@ export function useChordManagement(
     currentChord,
     handleChordSubmit,
     removeChord,
-    moveChord,
-    swapChords
   };
+}
+
+declare module './useEventBus' {
+  interface EventsMap {
+    'command:chordManagement:move': {
+      fromPosition: { colIndex: number, rowIndex: number };
+      toPosition: { colIndex: number, rowIndex: number };
+    },
+  }
 }

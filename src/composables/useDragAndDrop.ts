@@ -4,28 +4,14 @@ import {
   dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { type GridColumn } from '../types/chord-board';
+import { eventBus } from './useEventBus';
 
 export function useDragAndDrop(
   columns: Ref<GridColumn[]>,
   gridRef: Ref<HTMLElement | null>,
   isPositionOccupied: (row: number, col: number, excludeChordId?: string) => boolean,
   gridToPixelPosition: (row: number, col: number) => { x: number; y: number },
-  moveColumn: (fromIndex: number, toIndex: number) => void,
-  moveChord: (
-    chordId: string,
-    sourceColumnIndex: number,
-    sourceChordIndex: number,
-    targetColumnIndex: number,
-    targetGridPosition: { row: number; col: number }
-  ) => void,
-  swapChords: (
-    sourceChordId: string,
-    sourceColumnIndex: number,
-    sourceChordIndex: number,
-    targetChordId: string,
-    targetColumnIndex: number,
-    targetChordIndex: number
-  ) => void
+  moveColumn: (fromIndex: number, toIndex: number) => void
 ) {
   const cleanupFunctions = ref<(() => void)[]>([]);
 
@@ -121,15 +107,17 @@ export function useDragAndDrop(
 
           // If we found a chord to swap with
           if (targetChord && targetChordIndex !== -1) {
-            // Swap the chords
-            swapChords(
-              chordId,
-              sourceColumnIndex,
-              sourceChordIndex,
-              targetChord.id,
-              columnIndex,
-              targetChordIndex
-            );
+            // Emit event to swap the chords
+            eventBus.emit('command:chordManagement:move', {
+              fromPosition: {
+                colIndex: foundChord.gridPosition.col,
+                rowIndex: foundChord.gridPosition.row
+              },
+              toPosition: {
+                colIndex: targetChord.gridPosition.col,
+                rowIndex: targetChord.gridPosition.row
+              }
+            });
             return;
           }
 
@@ -155,8 +143,17 @@ export function useDragAndDrop(
           gridPosition.row = freeRow;
         }
 
-        // Move the chord to the new position
-        moveChord(chordId, sourceColumnIndex, sourceChordIndex, columnIndex, gridPosition);
+        // Emit event to move the chord to the new position
+        eventBus.emit('command:chordManagement:move', {
+          fromPosition: {
+            colIndex: foundChord.gridPosition.col,
+            rowIndex: foundChord.gridPosition.row
+          },
+          toPosition: {
+            colIndex: gridPosition.col,
+            rowIndex: gridPosition.row
+          }
+        });
       }
     });
 

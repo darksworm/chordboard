@@ -36,8 +36,6 @@ const {
   errorMessage,
   handleChordSubmit,
   removeChord,
-  moveChord,
-  swapChords
 } = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition);
 
 // Initialize board persistence
@@ -59,8 +57,6 @@ const {
   isPositionOccupied,
   gridToPixelPosition,
   moveColumn,
-  moveChord,
-  swapChords
 );
 
 // Variable to store cleanup function for auto-save
