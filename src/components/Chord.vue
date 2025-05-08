@@ -141,9 +141,4 @@ onMounted(() => {
   height:0;
   color: #666666;
 }
-
-.chord-container {
-  width: 200px;
-  height: 240px;
-}
 </style>

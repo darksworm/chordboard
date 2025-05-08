@@ -9,7 +9,7 @@ import {
 
 // Define grid cell size
 const GRID_CELL_WIDTH = 220; // Width of a grid cell in pixels
-const GRID_CELL_HEIGHT = 300; // Height of a grid cell in pixels
+const GRID_CELL_HEIGHT = 280; // Height of a grid cell in pixels
 
 interface ChordItem {
   id: string;
