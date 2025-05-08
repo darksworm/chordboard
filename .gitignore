@@ -28,3 +28,4 @@ a/.vscode/settings.json
 *.sw?
 
 *.tsbuildinfo
+.vite/
