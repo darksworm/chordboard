@@ -26,12 +26,6 @@ export function useColumnManagement(
 
   // Function to adjust the number of columns based on available space
   const adjustColumnCount = () => {
-    // If we don't have any columns yet, create at least one
-    if (columns.value.length === 0) {
-      addColumn(0);
-      return;
-    }
-
     // Ensure we have enough columns to fill the available space
     // but don't remove columns that have chords in them
     // Use a minimum of 3 columns initially to avoid showing just one column
