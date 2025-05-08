@@ -227,6 +227,61 @@ const setupColumnDraggable = (element: HTMLElement, columnId: string, columnInde
   cleanupFunctions.value.push(cleanup);
 };
 
+// Function to set up a column content area as a drop target for chords
+const setupColumnDropTarget = (element: HTMLElement, columnId: string, columnIndex: number) => {
+  if (!element) return;
+
+  // Make the column content area a drop target for chords
+  const cleanup = dropTargetForElements({
+    element,
+    onDrop: ({ source }) => {
+      const chordId = source.element.getAttribute('data-chord-id');
+      if (!chordId) return;
+
+      // Find the chord in all columns
+      let foundChord: ChordItem | null = null;
+      let sourceColumnIndex = -1;
+      let sourceChordIndex = -1;
+
+      for (let i = 0; i < columns.value.length; i++) {
+        const column = columns.value[i];
+        const chordIndex = column.chords.findIndex(c => c.id === chordId);
+
+        if (chordIndex !== -1) {
+          foundChord = column.chords[chordIndex];
+          sourceColumnIndex = i;
+          sourceChordIndex = chordIndex;
+          break;
+        }
+      }
+
+      if (!foundChord || sourceColumnIndex === -1 || sourceChordIndex === -1) return;
+
+      // If the chord is already in this column, do nothing
+      if (sourceColumnIndex === columnIndex) return;
+
+      // Remove from source column
+      columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
+
+      // Find an empty position in the target column
+      const gridPosition = findEmptyGridPosition(columnIndex);
+
+      // Convert grid position to pixel coordinates
+      const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
+
+      // Update the chord's position
+      foundChord.position = pixelPosition;
+      foundChord.gridPosition = gridPosition;
+
+      // Add to target column
+      columns.value[columnIndex].chords.push(foundChord);
+    }
+  });
+
+  // Store the cleanup function
+  cleanupFunctions.value.push(cleanup);
+};
+
 // Function to add a new column at the specified index
 const addColumn = (index: number) => {
   // Create a new column
@@ -331,81 +386,8 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
   cleanupFunctions.value.push(() => window.removeEventListener('resize', handleResize));
 
-  // Make the grid a drop target for chord items
-  const cleanupChordDropTarget = dropTargetForElements({
-    element: gridRef.value,
-    onDrop: ({ source, location }) => {
-      const chordId = source.element.getAttribute('data-chord-id');
-      if (!chordId) return;
-
-      // Find the chord in all columns
-      let foundChord: ChordItem | null = null;
-      let sourceColumnIndex = -1;
-      let sourceChordIndex = -1;
-
-      for (let i = 0; i < columns.value.length; i++) {
-        const column = columns.value[i];
-        const chordIndex = column.chords.findIndex(c => c.id === chordId);
-
-        if (chordIndex !== -1) {
-          foundChord = column.chords[chordIndex];
-          sourceColumnIndex = i;
-          sourceChordIndex = chordIndex;
-          break;
-        }
-      }
-
-      if (!foundChord || sourceColumnIndex === -1 || sourceChordIndex === -1) return;
-
-      // Store original position in case we need to revert
-      const originalGridPosition = { ...foundChord.gridPosition };
-
-      // Get the grid position from the drop location
-      const gridRect = gridRef.value!.getBoundingClientRect();
-      const relativeX = location.current.input.clientX - gridRect.left;
-      const relativeY = location.current.input.clientY - gridRect.top;
-
-      // Calculate the nearest grid position
-      const gridPosition = calculateGridPosition(relativeX, relativeY);
-
-      // Determine which column the chord is being dropped into
-      const targetColumnIndex = gridPosition.col;
-
-      // Ensure the target column exists
-      while (columns.value.length <= targetColumnIndex) {
-        columns.value.push({
-          id: generateId(),
-          index: columns.value.length,
-          chords: []
-        });
-      }
-
-      // Check if the target position is already occupied by another chord
-      if (isPositionOccupied(gridPosition.row, gridPosition.col, chordId)) {
-        // Position is occupied, revert to original position
-        const pixelPosition = gridToPixelPosition(originalGridPosition.row, originalGridPosition.col);
-        foundChord.position = pixelPosition;
-        foundChord.gridPosition = originalGridPosition;
-      } else {
-        // Position is free, update the chord's position
-        const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
-        foundChord.position = pixelPosition;
-        foundChord.gridPosition = gridPosition;
-
-        // If the column has changed, move the chord to the new column
-        if (targetColumnIndex !== sourceColumnIndex) {
-          // Remove from source column
-          columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
-
-          // Add to target column
-          columns.value[targetColumnIndex].chords.push(foundChord);
-        }
-      }
-    }
-  });
-
-  // Store the cleanup function
-  cleanupFunctions.value.push(cleanupChordDropTarget);
+  // We no longer need a drop target for the entire grid since we have column-specific drop targets
+  // This allows for more intuitive dragging of chords between columns
 
   // Make the grid a drop target for columns
   const cleanupColumnDropTarget = dropTargetForElements({
@@ -486,7 +468,10 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div class="column-content">
+          <div
+            class="column-content"
+            :ref="el => el && setupColumnDropTarget(el as HTMLElement, column.id, columnIndex)"
+          >
             <div
               v-for="chord in column.chords"
               :key="chord.id"
