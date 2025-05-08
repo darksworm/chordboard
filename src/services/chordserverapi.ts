@@ -24,7 +24,8 @@ export const fetchChordData = async (chordName: string): Promise<Result<Chord, s
     throw new Error('Please enter a chord name');
   }
 
-  const response = await fetch(`http://localhost:8080/chords/${encodeURIComponent(chordName)}`);
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const response = await fetch(`${apiUrl}/chords/${encodeURIComponent(chordName)}`);
 
   if (!response.ok) {
     if (response.status === 404) {
