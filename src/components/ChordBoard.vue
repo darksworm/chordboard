@@ -17,8 +17,6 @@ const columns = ref<Column[]>([]);
 // Initialize composables with dependencies
 const {
   gridColumns,
-  gridRows,
-  calculateGridPosition,
   gridToPixelPosition,
   isPositionOccupied,
   findEmptyGridPosition,
@@ -27,9 +25,7 @@ const {
 } = useGridCalculations(gridRef, columns);
 
 const {
-  addColumn,
   adjustColumnCount,
-  updateColumnIndices,
   moveColumn
 } = useColumnManagement(columns, gridColumns, updateGridDimensions);
 
@@ -37,7 +33,6 @@ const {
   chordInput,
   isLoading,
   errorMessage,
-  currentChord,
   handleChordSubmit,
   removeChord,
   moveChord,
