@@ -33,8 +33,14 @@ const gridRows = ref(0);
 
 // Function to calculate the nearest grid position
 const calculateGridPosition = (x: number, y: number) => {
-  const col = Math.max(0, Math.min(Math.floor(x / GRID_CELL_WIDTH), gridColumns.value - 1));
-  const row = Math.max(0, Math.min(Math.floor(y / GRID_CELL_HEIGHT), gridRows.value - 1));
+  // Use Math.floor to get the nearest grid cell
+  let col = Math.floor(x / GRID_CELL_WIDTH);
+  let row = Math.floor(y / GRID_CELL_HEIGHT);
+
+  // Ensure the position is within the grid boundaries
+  col = Math.max(0, Math.min(col, gridColumns.value - 1));
+  row = Math.max(0, Math.min(row, gridRows.value - 1));
+
   return { row, col };
 };
 
@@ -146,8 +152,8 @@ const updateGridDimensions = () => {
   const gridWidth = gridRef.value.clientWidth;
   const gridHeight = gridRef.value.clientHeight;
 
-  gridColumns.value = Math.floor(gridWidth / GRID_CELL_WIDTH);
-  gridRows.value = Math.floor(gridHeight / GRID_CELL_HEIGHT);
+  gridColumns.value = Math.ceil(gridWidth / GRID_CELL_WIDTH);
+  gridRows.value = Math.ceil(gridHeight / GRID_CELL_HEIGHT);
 };
 
 // Set up drag and drop functionality
@@ -176,8 +182,8 @@ onMounted(() => {
 
       // Get the grid position from the drop location
       const gridRect = gridRef.value!.getBoundingClientRect();
-      const relativeX = location.clientX - gridRect.left;
-      const relativeY = location.clientY - gridRect.top;
+      const relativeX = location.current.input.clientX - gridRect.left;
+      const relativeY = location.current.input.clientY - gridRect.top;
 
       // Calculate the nearest grid position
       const gridPosition = calculateGridPosition(relativeX, relativeY);
