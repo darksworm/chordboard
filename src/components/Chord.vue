@@ -138,8 +138,8 @@ onMounted(() => {
 
 .chord-title {
   font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #333;
+  height:0;
+  color: #666666;
 }
 
 .chord-container {
