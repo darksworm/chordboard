@@ -1,401 +1,63 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { fetchChordData, type Chord as ChordType } from '../services/chordserverapi';
+import { ref, onMounted } from 'vue';
 import Chord from './Chord.vue';
-import {
-  draggable,
-  dropTargetForElements
-} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
-// Define grid cell size
-const GRID_CELL_WIDTH = 220; // Width of a grid cell in pixels
-const GRID_CELL_HEIGHT = 280; // Height of a grid cell in pixels
+// Import types and composables
+import { GRID_CELL_WIDTH, GRID_CELL_HEIGHT, type Column } from '../types/chord-board';
+import { useGridCalculations } from '../composables/useGridCalculations';
+import { useColumnManagement } from '../composables/useColumnManagement';
+import { useChordManagement } from '../composables/useChordManagement';
+import { useDragAndDrop } from '../composables/useDragAndDrop';
 
-interface ChordItem {
-  id: string;
-  chord: ChordType;
-  position: { x: number; y: number };
-  gridPosition: { row: number; col: number };
-}
-
-interface Column {
-  id: string;
-  index: number;
-  chords: ChordItem[];
-}
-
-const chordInput = ref('');
+// Setup refs
 const inputRef = ref<HTMLInputElement | null>(null);
-const isLoading = ref(false);
-const errorMessage = ref('');
 const gridRef = ref<HTMLElement | null>(null);
-
-const currentChord = ref<ChordType | null>(null);
 const columns = ref<Column[]>([]);
-const cleanupFunctions = ref<(() => void)[]>([]);
 
-// Generate a unique ID
-const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-// Initialize columns based on available space
-onMounted(() => {
-  // We'll let adjustColumnCount handle the column creation
-  // This will be called in the drag and drop setup onMounted hook
-});
-
-// Calculate the number of columns that can fit in the grid
-const gridColumns = ref(0);
-const gridRows = ref(0);
-
-// Function to calculate the nearest grid position
-const calculateGridPosition = (x: number, y: number) => {
-  // Use Math.floor to get the nearest grid cell
-  let col = Math.floor(x / GRID_CELL_WIDTH);
-  let row = Math.floor(y / GRID_CELL_HEIGHT);
-
-  // Ensure the position is within the grid boundaries
-  col = Math.max(0, Math.min(col, gridColumns.value - 1));
-  row = Math.max(0, Math.min(row, gridRows.value - 1));
-
-  return { row, col };
-};
-
-// Function to convert grid position to pixel coordinates
-const gridToPixelPosition = (row: number, col: number) => {
-  return {
-    x: col * GRID_CELL_WIDTH,
-    y: row * GRID_CELL_HEIGHT
-  };
-};
-
-// Function to check if a grid position is occupied
-const isPositionOccupied = (row: number, col: number, excludeChordId?: string) => {
-  return columns.value.some(column =>
-    column.chords.some(chord =>
-      chord.gridPosition.row === row &&
-      chord.gridPosition.col === col &&
-      (excludeChordId === undefined || chord.id !== excludeChordId)
-    )
-  );
-};
-
-// Function to find an empty grid position
-const findEmptyGridPosition = (columnIndex: number = 0) => {
-  // Create a 2D array to track occupied positions
-  const occupiedPositions: boolean[][] = Array(gridRows.value)
-    .fill(false)
-    .map(() => Array(gridColumns.value).fill(false));
-
-  // Mark occupied positions
-  columns.value.forEach(column => {
-    column.chords.forEach(chord => {
-      if (chord.gridPosition.row < gridRows.value && chord.gridPosition.col < gridColumns.value) {
-        occupiedPositions[chord.gridPosition.row][chord.gridPosition.col] = true;
-      }
-    });
-  });
-
-  // Find the first empty position in the specified column
-  // For column-based layout, we'll use a different approach:
-  // Find the lowest empty row in the specified column
-  const column = columns.value[columnIndex] || columns.value[0];
-  const chordsInColumn = column.chords;
-
-  // If there are no chords in the column, return the top position
-  if (chordsInColumn.length === 0) {
-    return { row: 0, col: columnIndex };
-  }
-
-  // Find the maximum row value in this column
-  const maxRow = Math.max(...chordsInColumn.map(chord => chord.gridPosition.row));
-
-  // Return the position below the lowest chord
-  return { row: maxRow + 1, col: columnIndex };
-};
-
-// Generate a unique ID for each chord
-const generateChordId = () => `chord-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const handleChordSubmit = async () => {
-  if (!chordInput.value.trim()) {
-    errorMessage.value = 'Please enter a chord name';
-    return;
-  }
-
-  isLoading.value = true;
-  errorMessage.value = '';
-
-  const fetchedChord = await fetchChordData(chordInput.value);
-
-  if (fetchedChord.isErr()) {
-    errorMessage.value = fetchedChord.error;
-    currentChord.value = null;
-  } else {
-    currentChord.value = fetchedChord.value;
-
-    // Ensure we have columns available
-    if (columns.value.length === 0) {
-      adjustColumnCount();
-    }
-
-    // Find the column with the fewest chords
-    let columnIndex = 0;
-    let minChords = Infinity;
-
-    for (let i = 0; i < columns.value.length; i++) {
-      const chordCount = columns.value[i].chords.length;
-      if (chordCount < minChords) {
-        minChords = chordCount;
-        columnIndex = i;
-      }
-    }
-
-    // Find an empty grid position for the new chord in the selected column
-    const gridPosition = findEmptyGridPosition(columnIndex);
-
-    // Convert grid position to pixel coordinates
-    const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
-
-    // Automatically add the chord to the pinboard
-    const newChord: ChordItem = {
-      id: generateChordId(),
-      chord: fetchedChord.value,
-      position: pixelPosition,
-      gridPosition: gridPosition
-    };
-
-    // Add the chord to the appropriate column
-    columns.value[columnIndex].chords.push(newChord);
-
-    // Clear the input field for the next chord
-    chordInput.value = '';
-  }
-
-  isLoading.value = false;
-
-  // Refocus on the input element
-  setTimeout(() => {
-    inputRef.value?.focus();
-  }, 0);
-};
-
-
-// Remove a chord from the grid
-const removeChord = (id: string) => {
-  for (let i = 0; i < columns.value.length; i++) {
-    const column = columns.value[i];
-    const chordIndex = column.chords.findIndex(chord => chord.id === id);
-
-    if (chordIndex !== -1) {
-      column.chords.splice(chordIndex, 1);
-      return;
-    }
-  }
-};
-
-// Function to set up draggable for a chord element
-const setupDraggable = (element: HTMLElement, chordId: string) => {
-  if (!element) return;
-
-  // Make the element draggable
-  const cleanup = draggable({
-    element,
-    dragHandle: element
-  });
-
-  // Store the cleanup function
-  cleanupFunctions.value.push(cleanup);
-};
-
-// Function to set up draggable for a column
-const setupColumnDraggable = (element: HTMLElement, columnId: string, columnIndex: number) => {
-  if (!element) return;
-
-  // Find the drag handle element
-  const dragHandleSelector = `[data-column-drag-handle="${columnId}"]`;
-  const dragHandle = element.querySelector(dragHandleSelector);
-
-  if (!dragHandle) return;
-
-  // Make the column draggable by its handle
-  const cleanup = draggable({
-    element,
-    dragHandle: dragHandle as HTMLElement
-  });
-
-  // Store the cleanup function
-  cleanupFunctions.value.push(cleanup);
-};
-
-// Function to set up a column content area as a drop target for chords
-const setupColumnDropTarget = (element: HTMLElement, columnId: string, columnIndex: number) => {
-  if (!element) return;
-
-  // Make the column content area a drop target for chords
-  const cleanup = dropTargetForElements({
-    element,
-    onDrop: ({ source, location }) => {
-      const chordId = source.element.getAttribute('data-chord-id');
-      if (!chordId) return;
-
-      // Find the chord in all columns
-      let foundChord: ChordItem | null = null;
-      let sourceColumnIndex = -1;
-      let sourceChordIndex = -1;
-
-      for (let i = 0; i < columns.value.length; i++) {
-        const column = columns.value[i];
-        const chordIndex = column.chords.findIndex(c => c.id === chordId);
-
-        if (chordIndex !== -1) {
-          foundChord = column.chords[chordIndex];
-          sourceColumnIndex = i;
-          sourceChordIndex = chordIndex;
-          break;
-        }
-      }
-
-      if (!foundChord || sourceColumnIndex === -1 || sourceChordIndex === -1) return;
-
-      // Calculate the drop position relative to the column
-      const columnRect = element.getBoundingClientRect();
-      const relativeY = location.current.input.clientY - columnRect.top;
-
-      // Calculate the row based on the Y coordinate
-      const row = Math.floor(relativeY / GRID_CELL_HEIGHT);
-
-      // Create the grid position
-      const gridPosition = { row, col: columnIndex };
-
-      // Check if the position is already occupied (excluding the chord being moved)
-      if (isPositionOccupied(row, columnIndex, chordId)) {
-        // If occupied, find the nearest free position
-        let freeRow = row;
-
-        // Try positions above and below until we find a free one
-        for (let offset = 1; offset < gridRows.value; offset++) {
-          // Try below first
-          if (freeRow + offset < gridRows.value && !isPositionOccupied(freeRow + offset, columnIndex, chordId)) {
-            freeRow = freeRow + offset;
-            break;
-          }
-
-          // Then try above
-          if (freeRow - offset >= 0 && !isPositionOccupied(freeRow - offset, columnIndex, chordId)) {
-            freeRow = freeRow - offset;
-            break;
-          }
-        }
-
-        // Update the grid position with the free row
-        gridPosition.row = freeRow;
-      }
-
-      // Remove from source column
-      columns.value[sourceColumnIndex].chords.splice(sourceChordIndex, 1);
-
-      // Convert grid position to pixel coordinates
-      const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
-
-      // Update the chord's position
-      foundChord.position = pixelPosition;
-      foundChord.gridPosition = gridPosition;
-
-      // Add to target column
-      columns.value[columnIndex].chords.push(foundChord);
-    }
-  });
-
-  // Store the cleanup function
-  cleanupFunctions.value.push(cleanup);
-};
-
-// Function to add a new column at the specified index
-const addColumn = (index: number) => {
-  // Create a new column
-  const newColumn: Column = {
-    id: generateId(),
-    index: index,
-    chords: []
-  };
-
-  // Insert the column at the specified index
-  columns.value.splice(index, 0, newColumn);
-
-  // Update the index of all columns after the inserted one
-  for (let i = index + 1; i < columns.value.length; i++) {
-    columns.value[i].index = i;
-  }
-};
-
-// Function to update grid dimensions
-const updateGridDimensions = () => {
-  if (!gridRef.value) return;
-
-  const gridWidth = gridRef.value.clientWidth;
-  const gridHeight = gridRef.value.clientHeight;
-
-  gridColumns.value = Math.ceil(gridWidth / GRID_CELL_WIDTH);
-  gridRows.value = Math.ceil(gridHeight / GRID_CELL_HEIGHT);
-
-  // Adjust the number of columns based on available space
-  adjustColumnCount();
-};
-
-// Function to adjust the number of columns based on available space
-const adjustColumnCount = () => {
-  // If gridColumns is not calculated yet, do nothing
-  if (gridColumns.value <= 0) return;
-
-  const currentColumnCount = columns.value.length;
-  const targetColumnCount = gridColumns.value;
-
-  // If we need more columns
-  if (currentColumnCount < targetColumnCount) {
-    // Add columns until we reach the target count
-    for (let i = currentColumnCount; i < targetColumnCount; i++) {
-      columns.value.push({
-        id: generateId(),
-        index: i,
-        chords: []
-      });
-    }
-  } else if (currentColumnCount > targetColumnCount) {
-    // If we have too many columns, we'll only remove empty columns from the end
-    // This preserves user data when the screen is resized smaller
-
-    // Find the highest index of a column that has chords
-    let highestNonEmptyColumnIndex = -1;
-    for (let i = columns.value.length - 1; i >= 0; i--) {
-      if (columns.value[i].chords.length > 0) {
-        highestNonEmptyColumnIndex = i;
-        break;
-      }
-    }
-
-    // Calculate how many empty columns we can safely remove
-    // We need to keep at least targetColumnCount columns or up to the highest non-empty column index + 1
-    const minColumnsToKeep = Math.max(targetColumnCount, highestNonEmptyColumnIndex + 1);
-
-    // Remove empty columns from the end, but ensure we keep at least minColumnsToKeep
-    if (currentColumnCount > minColumnsToKeep) {
-      // Only remove columns that are empty and beyond the minimum count
-      columns.value = columns.value.filter((column, index) => {
-        return index < minColumnsToKeep || column.chords.length > 0;
-      });
-
-      // Update the index of all columns
-      columns.value.forEach((column, index) => {
-        column.index = index;
-      });
-    }
-  }
-};
-
-// Computed property for the total width of all columns
-const totalColumnsWidth = computed(() => {
-  return `${columns.value.length * GRID_CELL_WIDTH}px`;
-});
+// Initialize composables with dependencies
+const {
+  gridColumns,
+  gridRows,
+  calculateGridPosition,
+  gridToPixelPosition,
+  isPositionOccupied,
+  findEmptyGridPosition,
+  updateGridDimensions,
+  totalColumnsWidth
+} = useGridCalculations(gridRef, columns);
+
+const {
+  addColumn,
+  adjustColumnCount,
+  updateColumnIndices,
+  moveColumn
+} = useColumnManagement(columns, gridColumns, updateGridDimensions);
+
+const {
+  chordInput,
+  isLoading,
+  errorMessage,
+  currentChord,
+  handleChordSubmit,
+  removeChord,
+  moveChord,
+  swapChords
+} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, adjustColumnCount);
+
+const {
+  setupDraggable,
+  setupColumnDraggable,
+  setupColumnDropTarget,
+  setupGridDropTarget
+} = useDragAndDrop(
+  columns,
+  gridRef,
+  isPositionOccupied,
+  gridToPixelPosition,
+  moveColumn,
+  moveChord,
+  swapChords
+);
 
 // Set up drag and drop functionality
 onMounted(() => {
@@ -410,61 +72,26 @@ onMounted(() => {
   // Add window resize listener to recalculate grid dimensions
   const handleResize = () => {
     updateGridDimensions();
+    adjustColumnCount();
   };
   window.addEventListener('resize', handleResize);
-  cleanupFunctions.value.push(() => window.removeEventListener('resize', handleResize));
 
-  // We no longer need a drop target for the entire grid since we have column-specific drop targets
-  // This allows for more intuitive dragging of chords between columns
-
-  // Make the grid a drop target for columns
-  const cleanupColumnDropTarget = dropTargetForElements({
-    element: gridRef.value,
-    onDrop: ({ source, location }) => {
-      const columnId = source.element.getAttribute('data-column-id');
-      if (!columnId) return;
-
-      const columnIndex = parseInt(source.element.getAttribute('data-column-index') || '-1', 10);
-      if (columnIndex === -1 || columnIndex >= columns.value.length) return;
-
-      // Get the drop location
-      const gridRect = gridRef.value!.getBoundingClientRect();
-      const relativeX = location.current.input.clientX - gridRect.left;
-
-      // Calculate the target column index based on the drop location
-      const targetColumnIndex = Math.floor(relativeX / GRID_CELL_WIDTH);
-
-      // Don't do anything if the column is dropped at its original position
-      if (targetColumnIndex === columnIndex) return;
-
-      // Move the column to the new position
-      const [movedColumn] = columns.value.splice(columnIndex, 1);
-      columns.value.splice(targetColumnIndex, 0, movedColumn);
-
-      // Update the index of all columns
-      columns.value.forEach((column, index) => {
-        column.index = index;
-      });
-    }
-  });
-
-  // Store the cleanup function
-  cleanupFunctions.value.push(cleanupColumnDropTarget);
+  // Set up the grid as a drop target for columns
+  setupGridDropTarget();
 });
 
-// Clean up event listeners when component is unmounted
-onUnmounted(() => {
-  // Call all cleanup functions
-  cleanupFunctions.value.forEach(cleanup => cleanup());
-  // Clear the cleanup functions array
-  cleanupFunctions.value = [];
-});
+// Focus on input after submitting
+const focusInput = () => {
+  setTimeout(() => {
+    inputRef.value?.focus();
+  }, 0);
+};
 </script>
 
 <template>
   <div class="chord-board">
     <div class="chord-search">
-      <form @submit.prevent="handleChordSubmit">
+      <form @submit.prevent="handleChordSubmit().then(focusInput)">
         <input
           ref="inputRef"
           v-model="chordInput"
