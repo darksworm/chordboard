@@ -37,15 +37,10 @@ const cleanupFunctions = ref<(() => void)[]>([]);
 // Generate a unique ID
 const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-// Initialize with one empty column
+// Initialize columns based on available space
 onMounted(() => {
-  if (columns.value.length === 0) {
-    columns.value.push({
-      id: generateId(),
-      index: 0,
-      chords: []
-    });
-  }
+  // We'll let adjustColumnCount handle the column creation
+  // This will be called in the drag and drop setup onMounted hook
 });
 
 // Calculate the number of columns that can fit in the grid
@@ -138,8 +133,22 @@ const handleChordSubmit = async () => {
   } else {
     currentChord.value = fetchedChord.value;
 
-    // Use the first column by default
-    const columnIndex = 0;
+    // Ensure we have columns available
+    if (columns.value.length === 0) {
+      adjustColumnCount();
+    }
+
+    // Find the column with the fewest chords
+    let columnIndex = 0;
+    let minChords = Infinity;
+
+    for (let i = 0; i < columns.value.length; i++) {
+      const chordCount = columns.value[i].chords.length;
+      if (chordCount < minChords) {
+        minChords = chordCount;
+        columnIndex = i;
+      }
+    }
 
     // Find an empty grid position for the new chord in the selected column
     const gridPosition = findEmptyGridPosition(columnIndex);
@@ -156,17 +165,7 @@ const handleChordSubmit = async () => {
     };
 
     // Add the chord to the appropriate column
-    if (columns.value.length === 0) {
-      // Create a new column if none exists
-      columns.value.push({
-        id: generateId(),
-        index: 0,
-        chords: [newChord]
-      });
-    } else {
-      // Add to the first column
-      columns.value[columnIndex].chords.push(newChord);
-    }
+    columns.value[columnIndex].chords.push(newChord);
 
     // Clear the input field for the next chord
     chordInput.value = '';
@@ -255,14 +254,48 @@ const updateGridDimensions = () => {
 
   gridColumns.value = Math.ceil(gridWidth / GRID_CELL_WIDTH);
   gridRows.value = Math.ceil(gridHeight / GRID_CELL_HEIGHT);
+
+  // Adjust the number of columns based on available space
+  adjustColumnCount();
 };
+
+// Function to adjust the number of columns based on available space
+const adjustColumnCount = () => {
+  // If gridColumns is not calculated yet, do nothing
+  if (gridColumns.value <= 0) return;
+
+  const currentColumnCount = columns.value.length;
+  const targetColumnCount = gridColumns.value;
+
+  // If we need more columns
+  if (currentColumnCount < targetColumnCount) {
+    // Add columns until we reach the target count
+    for (let i = currentColumnCount; i < targetColumnCount; i++) {
+      columns.value.push({
+        id: generateId(),
+        index: i,
+        chords: []
+      });
+    }
+  }
+  // If we have too many columns, we'll keep them for now
+  // This preserves user data in case the window is temporarily resized smaller
+};
+
+// Computed property for the total width of all columns
+const totalColumnsWidth = computed(() => {
+  return `${columns.value.length * GRID_CELL_WIDTH}px`;
+});
 
 // Set up drag and drop functionality
 onMounted(() => {
   if (!gridRef.value) return;
 
-  // Calculate grid dimensions
+  // Calculate grid dimensions and adjust column count
   updateGridDimensions();
+
+  // Explicitly call adjustColumnCount to ensure columns are created
+  adjustColumnCount();
 
   // Add window resize listener to recalculate grid dimensions
   const handleResize = () => {
@@ -407,7 +440,7 @@ onUnmounted(() => {
     </div>
 
     <div ref="gridRef" class="chord-grid">
-      <div class="columns-container">
+      <div class="columns-container" :style="{ width: totalColumnsWidth }">
         <div
           v-for="(column, columnIndex) in columns"
           :key="column.id"
@@ -466,6 +499,7 @@ onUnmounted(() => {
           :style="{
             left: `${columns.length * GRID_CELL_WIDTH + 10}px`
           }"
+          v-if="columns.length < gridColumns.value"
         >
           +
         </button>
