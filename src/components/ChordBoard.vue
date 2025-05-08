@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import Chord from './Chord.vue';
 
 // Import types and composables
@@ -8,6 +8,7 @@ import { useGridCalculations } from '../composables/useGridCalculations';
 import { useColumnManagement } from '../composables/useColumnManagement';
 import { useChordManagement } from '../composables/useChordManagement';
 import { useDragAndDrop } from '../composables/useDragAndDrop';
+import { useBoardPersistence } from '../composables/useBoardPersistence';
 
 // Setup refs
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -39,6 +40,47 @@ const {
   swapChords
 } = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition);
 
+// Initialize board persistence
+const {
+  saveState,
+  loadState,
+  clearState,
+  setupAutoSave,
+  error: persistenceError
+} = useBoardPersistence(columns);
+
+// Wrap move and swap operations to trigger saving
+const moveChordAndSave = (
+  chordId: string,
+  sourceColumnIndex: number,
+  sourceChordIndex: number,
+  targetColumnIndex: number,
+  targetGridPosition: { row: number; col: number }
+) => {
+  moveChord(chordId, sourceColumnIndex, sourceChordIndex, targetColumnIndex, targetGridPosition);
+  // Save state after moving a chord
+  saveState();
+};
+
+const swapChordsAndSave = (
+  sourceChordId: string,
+  sourceColumnIndex: number,
+  sourceChordIndex: number,
+  targetChordId: string,
+  targetColumnIndex: number,
+  targetChordIndex: number
+) => {
+  swapChords(sourceChordId, sourceColumnIndex, sourceChordIndex, targetChordId, targetColumnIndex, targetChordIndex);
+  // Save state after swapping chords
+  saveState();
+};
+
+const moveColumnAndSave = (columnId: string, sourceIndex: number, targetIndex: number) => {
+  moveColumn(columnId, sourceIndex, targetIndex);
+  // Save state after moving a column
+  saveState();
+};
+
 const {
   setupDraggable,
   setupColumnDraggable,
@@ -49,20 +91,29 @@ const {
   gridRef,
   isPositionOccupied,
   gridToPixelPosition,
-  moveColumn,
-  moveChord,
-  swapChords
+  moveColumnAndSave,
+  moveChordAndSave,
+  swapChordsAndSave
 );
 
-// Set up drag and drop functionality
+// Variable to store cleanup function for auto-save
+let cleanupAutoSave: (() => void) | null = null;
+
+// Set up drag and drop functionality and persistence
 onMounted(() => {
   if (!gridRef.value) return;
+
+  // Try to load saved state first
+  const stateLoaded = loadState();
 
   // Calculate grid dimensions and adjust column count
   updateGridDimensions();
 
-  // Explicitly call adjustColumnCount to ensure columns are created
-  adjustColumnCount();
+  // Only create default columns if no state was loaded
+  if (!stateLoaded) {
+    // Explicitly call adjustColumnCount to ensure columns are created
+    adjustColumnCount();
+  }
 
   // Add window resize listener to recalculate grid dimensions
   const handleResize = () => {
@@ -73,6 +124,17 @@ onMounted(() => {
 
   // Set up the grid as a drop target for columns
   setupGridDropTarget();
+
+  // Set up automatic saving every 5 seconds
+  cleanupAutoSave = setupAutoSave(5000);
+});
+
+// Clean up when component unmounts
+onUnmounted(() => {
+  // Clean up auto-save interval
+  if (cleanupAutoSave) {
+    cleanupAutoSave();
+  }
 });
 
 // Focus on input after submitting
@@ -81,12 +143,26 @@ const focusInput = () => {
     inputRef.value?.focus();
   }, 0);
 };
+
+// Wrap chord operations to trigger saving
+const handleChordSubmitAndSave = async () => {
+  await handleChordSubmit();
+  // Save state after adding a chord
+  saveState();
+  return Promise.resolve();
+};
+
+const removeChordAndSave = (id: string) => {
+  removeChord(id);
+  // Save state after removing a chord
+  saveState();
+};
 </script>
 
 <template>
   <div class="chord-board">
     <div class="chord-search">
-      <form @submit.prevent="handleChordSubmit().then(focusInput)">
+      <form @submit.prevent="handleChordSubmitAndSave().then(focusInput)">
         <input
           ref="inputRef"
           v-model="chordInput"
@@ -96,6 +172,7 @@ const focusInput = () => {
         />
       </form>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-if="persistenceError" class="error-message">Storage error: {{ persistenceError }}</p>
     </div>
 
     <div ref="gridRef" class="chord-grid">
@@ -135,7 +212,7 @@ const focusInput = () => {
               :ref="el => el && setupDraggable(el as HTMLElement, chord.id)"
             >
               <button
-                @click="removeChord(chord.id)"
+                @click="removeChordAndSave(chord.id)"
                 class="remove-button"
                 title="Remove chord"
               >
