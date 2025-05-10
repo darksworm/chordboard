@@ -246,13 +246,7 @@ export function useChordManagement(
         event.preventDefault();
         if (searchSuggestions.value.length > 0) {
           selectSuggestion(selectedSuggestionIndex.value);
-          // Trigger form submission by finding and clicking the hidden submit button
-          setTimeout(() => {
-            const submitButton = document.querySelector('.hidden-submit') as HTMLButtonElement;
-            if (submitButton) {
-              submitButton.click();
-            }
-          }, 0);
+          // No need to trigger form submission as the chord is added directly to the board
         }
         break;
       case 'Escape':
@@ -262,13 +256,50 @@ export function useChordManagement(
     }
   };
 
+  // Add a suggestion directly to the board
+  const addSuggestionToBoard = (suggestion: ChordType, specificColumnIndex?: number, specificRow?: number) => {
+    let columnIndex: number;
+    let gridPosition: { row: number; col: number };
+
+    if (specificColumnIndex !== undefined && specificRow !== undefined) {
+      // Use the specific cell if provided
+      columnIndex = specificColumnIndex;
+      gridPosition = { row: specificRow, col: specificColumnIndex };
+    } else {
+      // Find an empty grid position for the new chord
+      gridPosition = findEmptyGridPosition();
+      columnIndex = gridPosition.col;
+    }
+
+    // Convert grid position to pixel coordinates
+    const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
+
+    // Add the chord to the pinboard
+    const newChord: ChordInGrid = {
+      id: generateChordId(),
+      chord: suggestion,
+      position: pixelPosition,
+      gridPosition: gridPosition
+    };
+
+    // Add the chord to the appropriate column
+    columns.value[columnIndex].chords.push(newChord);
+
+    // Clear search state
+    showSuggestions.value = false;
+    noResultsFound.value = false;
+    chordInput.value = '';
+
+    // Emit save event
+    eventBus.emit('command:boardPersistence:save');
+  };
+
   // Select a suggestion by index
   const selectSuggestion = (index: number) => {
     if (index >= 0 && index < searchSuggestions.value.length) {
       const suggestion = searchSuggestions.value[index];
-      chordInput.value = `${suggestion.key}${suggestion.suffix}`;
-      showSuggestions.value = false;
-      noResultsFound.value = false;
+      // Instead of populating the text input, add the chord directly to the board
+      addSuggestionToBoard(suggestion);
     }
   };
 
@@ -349,6 +380,7 @@ export function useChordManagement(
     noResultsFound,
     handleKeyDown,
     selectSuggestion,
+    addSuggestionToBoard,
   };
 }
 

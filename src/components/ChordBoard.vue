@@ -49,6 +49,7 @@ const {
   noResultsFound,
   handleKeyDown: handleSuggestionKeyDown,
   selectSuggestion,
+  addSuggestionToBoard,
 } = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, gridColumns);
 
 // Initialize board persistence
@@ -217,6 +218,37 @@ const removeChordAndSave = (id: string) => {
   // Save state after removing a chord
   saveState();
 };
+
+// Wrapper function to handle selecting a suggestion and closing the modal
+const handleSelectSuggestion = (index: number) => {
+  if (index >= 0 && index < searchSuggestions.value.length) {
+    const suggestion = searchSuggestions.value[index];
+
+    // If in modal mode, use the selected cell position
+    if (showModal.value && selectedCell.value) {
+      addSuggestionToBoard(suggestion, selectedCell.value.columnIndex, selectedCell.value.row);
+      // Close the modal after adding the chord
+      closeModal();
+    } else {
+      // Otherwise use the default behavior
+      selectSuggestion(index);
+    }
+  }
+};
+
+// Custom keyboard handler for suggestions that uses our wrapper function
+const handleSuggestionNavigation = (event: KeyboardEvent) => {
+  if (!showSuggestions.value) return;
+
+  // First let the original handler handle navigation (up/down arrows)
+  handleSuggestionKeyDown(event);
+
+  // Then handle Enter key ourselves to use our wrapper function
+  if (event.key === 'Enter' && searchSuggestions.value.length > 0) {
+    event.preventDefault();
+    handleSelectSuggestion(selectedSuggestionIndex.value);
+  }
+};
 </script>
 
 <template>
@@ -235,8 +267,8 @@ const removeChordAndSave = (id: string) => {
             @keydown="(e) => {
               // Handle both modal escape and suggestion navigation
               handleKeyDown(e);
-              if (showSuggestions) {
-                handleSuggestionKeyDown(e);
+              if (showSuggestions.value) {
+                handleSuggestionNavigation(e);
               }
             }"
           />
@@ -250,7 +282,7 @@ const removeChordAndSave = (id: string) => {
             :key="`${suggestion.key}${suggestion.suffix}-${index}`"
             class="suggestion-item"
             :class="{ 'selected': index === selectedSuggestionIndex }"
-            @click="selectSuggestion(index); focusInput()"
+            @click="handleSelectSuggestion(index)"
           >
             <span class="suggestion-key">{{ suggestion.key }}</span>
             <span class="suggestion-suffix">{{ suggestion.suffix }}</span>
