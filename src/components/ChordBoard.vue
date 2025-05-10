@@ -15,6 +15,10 @@ const inputRef = ref<HTMLInputElement | null>(null);
 const gridRef = ref<HTMLElement | null>(null);
 const columns = ref<GridColumn[]>([]);
 
+// Modal state
+const showModal = ref(false);
+const selectedCell = ref<{ columnIndex: number, row: number } | null>(null);
+
 // Initialize composables with dependencies
 const {
   gridColumns,
@@ -36,7 +40,7 @@ const {
   errorMessage,
   handleChordSubmit,
   removeChord,
-} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition);
+} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, gridColumns);
 
 // Initialize board persistence
 const {
@@ -107,9 +111,39 @@ const focusInput = () => {
   }, 0);
 };
 
+// Show modal for adding a chord to a specific cell
+const showChordModal = (columnIndex: number, row: number) => {
+  selectedCell.value = { columnIndex, row };
+  showModal.value = true;
+  // Focus on input after modal is shown
+  setTimeout(() => {
+    inputRef.value?.focus();
+  }, 50);
+};
+
+// Close the modal
+const closeModal = () => {
+  showModal.value = false;
+  selectedCell.value = null;
+  chordInput.value = '';
+  errorMessage.value = '';
+};
+
 // Wrap chord operations to trigger saving
 const handleChordSubmitAndSave = async () => {
-  await handleChordSubmit();
+  if (!showModal.value) {
+    // If not in modal mode, use the default behavior
+    await handleChordSubmit();
+  } else {
+    // If in modal mode, use the selected cell
+    if (selectedCell.value) {
+      await handleChordSubmit(selectedCell.value.columnIndex, selectedCell.value.row);
+      if (!errorMessage.value) {
+        // Only close the modal if there was no error
+        closeModal();
+      }
+    }
+  }
   // Save state after adding a chord
   saveState();
   return Promise.resolve();
@@ -124,7 +158,33 @@ const removeChordAndSave = (id: string) => {
 
 <template>
   <div class="chord-board">
-    <div class="chord-search">
+    <!-- Modal for adding chords -->
+    <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+      <div class="modal-content" :class="{ 'loading': isLoading }">
+        <div class="modal-header">
+          <h3>Add Chord</h3>
+          <button class="close-button" @click="closeModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="handleChordSubmitAndSave()">
+            <input
+              ref="inputRef"
+              v-model="chordInput"
+              type="text"
+              placeholder="Enter chord name (e.g., Am, F#maj, G7)"
+              :disabled="isLoading"
+            />
+            <button type="submit" :disabled="isLoading">
+              {{ isLoading ? 'Loading...' : 'Add Chord' }}
+            </button>
+          </form>
+          <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top search bar (hidden when using the new UI) -->
+    <div class="chord-search" v-if="false">
       <form @submit.prevent="handleChordSubmitAndSave().then(focusInput)">
         <input
           ref="inputRef"
@@ -162,6 +222,7 @@ const removeChordAndSave = (id: string) => {
             class="column-content"
             :ref="el => el && setupColumnDropTarget(el as HTMLElement, column.id, columnIndex)"
           >
+            <!-- Existing chords -->
             <div
               v-for="chord in column.chords"
               :key="chord.id"
@@ -182,6 +243,28 @@ const removeChordAndSave = (id: string) => {
                 ×
               </button>
               <Chord :chord="chord.chord" />
+            </div>
+
+            <!-- Empty cells with plus buttons -->
+            <div
+              v-for="row in 20"
+              :key="`empty-${columnIndex}-${row-1}`"
+              class="empty-cell"
+              :class="{ 'selected-cell': showModal && selectedCell && selectedCell.columnIndex === columnIndex && selectedCell.row === row-1 }"
+              :style="{
+                top: `${(row-1) * GRID_CELL_HEIGHT}px`,
+                width: `${GRID_CELL_WIDTH}px`,
+                height: `${GRID_CELL_HEIGHT}px`
+              }"
+              v-if="!isPositionOccupied(row-1, columnIndex)"
+            >
+              <button
+                class="add-button"
+                @click="showChordModal(columnIndex, row-1)"
+                title="Add chord here"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
@@ -373,5 +456,150 @@ button:disabled {
   color: #d32f2f;
   margin-top: 0.5rem;
   font-size: 0.9rem;
+}
+
+/* Empty cell styles */
+.empty-cell {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1; /* Always visible */
+  transition: opacity 0.2s;
+  z-index: 0;
+  left: 0; /* Fix the offset issue */
+}
+
+.empty-cell:hover {
+  z-index: 2;
+}
+
+.selected-cell {
+  z-index: 3;
+  box-shadow: 0 0 0 2px #4CAF50, 0 0 20px rgba(76, 175, 80, 0.5);
+  border-radius: 8px;
+  background-color: rgba(76, 175, 80, 0.1);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 2px #4CAF50, 0 0 20px rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 4px #4CAF50, 0 0 30px rgba(76, 175, 80, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 2px #4CAF50, 0 0 20px rgba(76, 175, 80, 0.5);
+  }
+}
+
+.add-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: white; /* White background */
+  color: #999999; /* Gray plus sign */
+  border: 2px solid #cccccc; /* Gray border */
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s, border-color 0.2s, color 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.add-button:hover {
+  transform: scale(1.1);
+  background-color: #4CAF50; /* Green background on hover */
+  color: white; /* White plus sign on hover */
+  border-color: #4CAF50; /* Green border on hover */
+}
+
+/* Modal styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.modal-content.loading {
+  opacity: 0.8;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.close-button:hover {
+  background-color: #f0f0f0;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-body form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modal-body input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-body input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 </style>

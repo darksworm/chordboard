@@ -14,7 +14,7 @@ export function useChordManagement(
   const currentChord = ref<ChordType | null>(null);
 
   // Handle chord submission
-  const handleChordSubmit = async () => {
+  const handleChordSubmit = async (specificColumnIndex?: number, specificRow?: number) => {
     if (!chordInput.value.trim()) {
       errorMessage.value = 'Please enter a chord name';
       return;
@@ -31,20 +31,44 @@ export function useChordManagement(
     } else {
       currentChord.value = fetchedChord.value;
 
-      // Find the column with the fewest chords
-      let columnIndex = 0;
-      let minChords = Infinity;
+      let columnIndex: number;
+      let gridPosition: { row: number; col: number };
 
-      for (let i = 0; i < columns.value.length; i++) {
-        const chordCount = columns.value[i].chords.length;
-        if (chordCount < minChords) {
-          minChords = chordCount;
-          columnIndex = i;
+      if (specificColumnIndex !== undefined && specificRow !== undefined) {
+        // Use the specific cell if provided
+        columnIndex = specificColumnIndex;
+        gridPosition = { row: specificRow, col: specificColumnIndex };
+      } else {
+        // Find the column with the fewest chords, preferring visible columns
+        columnIndex = 0;
+        let minChords = Infinity;
+
+        // If gridColumns is provided, prefer visible columns
+        const visibleColumns = gridColumns?.value || columns.value.length;
+
+        // First try to find a column within the visible range
+        for (let i = 0; i < Math.min(visibleColumns, columns.value.length); i++) {
+          const chordCount = columns.value[i].chords.length;
+          if (chordCount < minChords) {
+            minChords = chordCount;
+            columnIndex = i;
+          }
         }
-      }
 
-      // Find an empty grid position for the new chord in the selected column
-      const gridPosition = findEmptyGridPosition(columnIndex);
+        // If all visible columns have chords, fall back to any column
+        if (minChords === Infinity) {
+          for (let i = 0; i < columns.value.length; i++) {
+            const chordCount = columns.value[i].chords.length;
+            if (chordCount < minChords) {
+              minChords = chordCount;
+              columnIndex = i;
+            }
+          }
+        }
+
+        // Find an empty grid position for the new chord in the selected column
+        gridPosition = findEmptyGridPosition(columnIndex);
+      }
 
       // Convert grid position to pixel coordinates
       const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
