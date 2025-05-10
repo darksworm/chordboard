@@ -66,6 +66,13 @@ const {
 // Variable to store cleanup function for auto-save
 let cleanupAutoSave: (() => void) | null = null;
 
+// Function to handle Escape key press
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && showModal.value) {
+    closeModal();
+  }
+};
+
 // Set up drag and drop functionality and persistence
 onMounted(() => {
   if (!gridRef.value) return;
@@ -94,6 +101,9 @@ onMounted(() => {
 
   // Set up automatic saving every 5 seconds
   cleanupAutoSave = setupAutoSave(5000);
+
+  // Add event listener for Escape key to close modal
+  window.addEventListener('keydown', handleKeyDown);
 });
 
 // Clean up when component unmounts
@@ -102,6 +112,9 @@ onUnmounted(() => {
   if (cleanupAutoSave) {
     cleanupAutoSave();
   }
+
+  // Remove event listener for Escape key
+  window.removeEventListener('keydown', handleKeyDown);
 });
 
 // Focus on input after submitting
