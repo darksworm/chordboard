@@ -298,7 +298,7 @@ const removeChordAndSave = (id: string) => {
 
             <!-- Empty cells with plus buttons -->
             <div
-              v-for="row in 20"
+              v-for="row in 50"
               :key="`empty-${columnIndex}-${row-1}`"
               class="empty-cell"
               :class="{ 'selected-cell': showModal && selectedCell && selectedCell.columnIndex === columnIndex && selectedCell.row === row-1 }"
@@ -333,12 +333,13 @@ const removeChordAndSave = (id: string) => {
   width: 100%;
   height: 100vh;
   padding: 0;
+  overflow: hidden;
 }
 
 .chord-grid {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   border: 1px dashed #ccc;
   border-radius: 0;
   margin-top: 0;
@@ -350,13 +351,15 @@ const removeChordAndSave = (id: string) => {
 .columns-container {
   position: relative;
   min-height: 100%;
+  height: calc(50 * 280px); /* 50 rows * GRID_CELL_HEIGHT */
   display: flex;
 }
 
 .column {
   position: absolute;
   top: 0;
-  height: 100%;
+  min-height: 100%;
+  height: calc(50 * 280px); /* 50 rows * GRID_CELL_HEIGHT */
   display: flex;
   flex-direction: column;
   background-color: transparent;
@@ -404,6 +407,7 @@ const removeChordAndSave = (id: string) => {
   border-top: none;
   background-color: #f9f9f9;
   margin-right: 0;
+  height: calc(50 * 280px - 25px); /* 50 rows * GRID_CELL_HEIGHT - column-header height */
 }
 
 
