@@ -36,9 +36,11 @@ const {
 
 const {
   chordInput,
+  fingeringInput,
   isLoading,
   errorMessage,
   handleChordSubmit,
+  handleFingeringSubmit,
   removeChord,
 } = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, gridColumns);
 
@@ -139,28 +141,61 @@ const closeModal = () => {
   showModal.value = false;
   selectedCell.value = null;
   chordInput.value = '';
+  fingeringInput.value = '';
   errorMessage.value = '';
+};
+
+// Check if input is a fingering pattern (6 symbols from 0-9, a-z, x)
+const isFingeringPattern = (input: string): boolean => {
+  // Regex to match exactly 6 characters that are digits 0-9, letters a-z, or 'x'
+  const fingeringRegex = /^[0-9a-zx]{6}$/;
+  return fingeringRegex.test(input);
 };
 
 // Wrap chord operations to trigger saving
 const handleChordSubmitAndSave = async () => {
-  if (!showModal.value) {
-    // If not in modal mode, use the default behavior
-    await handleChordSubmit();
+  // Determine if the input is a fingering pattern
+  const isFingering = isFingeringPattern(chordInput.value);
+
+  // If it's a fingering pattern, use handleFingeringSubmit
+  if (isFingering) {
+    fingeringInput.value = chordInput.value;
+
+    if (!showModal.value) {
+      // If not in modal mode, use the default behavior
+      await handleFingeringSubmit();
+    } else {
+      // If in modal mode, use the selected cell
+      if (selectedCell.value) {
+        await handleFingeringSubmit(selectedCell.value.columnIndex, selectedCell.value.row);
+        if (!errorMessage.value) {
+          // Only close the modal if there was no error
+          closeModal();
+        }
+      }
+    }
   } else {
-    // If in modal mode, use the selected cell
-    if (selectedCell.value) {
-      await handleChordSubmit(selectedCell.value.columnIndex, selectedCell.value.row);
-      if (!errorMessage.value) {
-        // Only close the modal if there was no error
-        closeModal();
+    // Otherwise, use handleChordSubmit for chord names
+    if (!showModal.value) {
+      // If not in modal mode, use the default behavior
+      await handleChordSubmit();
+    } else {
+      // If in modal mode, use the selected cell
+      if (selectedCell.value) {
+        await handleChordSubmit(selectedCell.value.columnIndex, selectedCell.value.row);
+        if (!errorMessage.value) {
+          // Only close the modal if there was no error
+          closeModal();
+        }
       }
     }
   }
+
   // Save state after adding a chord
   saveState();
   return Promise.resolve();
 };
+
 
 const removeChordAndSave = (id: string) => {
   removeChord(id);
@@ -184,13 +219,14 @@ const removeChordAndSave = (id: string) => {
               ref="inputRef"
               v-model="chordInput"
               type="text"
-              placeholder="Enter chord name (e.g., Am, F#maj, G7)"
+              placeholder="Enter chord name (e.g., Am) or fingering pattern (e.g., x02110)"
               :disabled="isLoading"
             />
             <button type="submit" :disabled="isLoading">
               {{ isLoading ? 'Loading...' : 'Add Chord' }}
             </button>
           </form>
+
           <div class="error-container">
             <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
           </div>
@@ -613,7 +649,25 @@ button:disabled {
 .modal-body {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #222;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.form-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #ddd;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .modal-body form {
@@ -654,6 +708,27 @@ button:disabled {
   border-color: #ff3333;
   transform: scale(1.05);
   box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+}
+
+.form-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: center;
+}
+
+.secondary-button {
+  background-color: #333;
+  color: #ddd;
+  border: 1px solid #555;
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background-color: #444;
+  border-color: #666;
 }
 
 .error-container {

@@ -1,5 +1,5 @@
 import { ref, type Ref, onMounted } from 'vue';
-import { fetchChordData, type Chord as ChordType } from '../services/chordserverapi';
+import { fetchChordData, fetchChordByFingering, type Chord as ChordType } from '../services/chordserverapi';
 import { type ChordInGrid, type GridColumn, generateChordId } from '../types/chord-board';
 import {eventBus, useEvent} from "@/composables/useEventBus.ts";
 
@@ -9,6 +9,7 @@ export function useChordManagement(
   gridToPixelPosition: (row: number, col: number) => { x: number; y: number },
 ) {
   const chordInput = ref('');
+  const fingeringInput = ref('');
   const isLoading = ref(false);
   const errorMessage = ref('');
   const currentChord = ref<ChordType | null>(null);
@@ -193,12 +194,66 @@ export function useChordManagement(
     useEvent('command:chordManagement:move', handleChordMove);
   });
 
+  // Handle fingering submission
+  const handleFingeringSubmit = async (specificColumnIndex?: number, specificRow?: number) => {
+    if (!fingeringInput.value.trim()) {
+      errorMessage.value = 'Please enter a fingering pattern';
+      return;
+    }
+
+    isLoading.value = true;
+    errorMessage.value = '';
+
+    const fetchedChord = await fetchChordByFingering(fingeringInput.value);
+
+    if (fetchedChord.isErr()) {
+      errorMessage.value = fetchedChord.error;
+      currentChord.value = null;
+    } else {
+      currentChord.value = fetchedChord.value;
+
+      let columnIndex: number;
+      let gridPosition: { row: number; col: number };
+
+      if (specificColumnIndex !== undefined && specificRow !== undefined) {
+        // Use the specific cell if provided
+        columnIndex = specificColumnIndex;
+        gridPosition = { row: specificRow, col: specificColumnIndex };
+      } else {
+        // Find an empty grid position for the new chord
+        gridPosition = findEmptyGridPosition();
+        columnIndex = gridPosition.col;
+      }
+
+      // Convert grid position to pixel coordinates
+      const pixelPosition = gridToPixelPosition(gridPosition.row, gridPosition.col);
+
+      // Automatically add the chord to the pinboard
+      const newChord: ChordInGrid = {
+        id: generateChordId(),
+        chord: fetchedChord.value,
+        position: pixelPosition,
+        gridPosition: gridPosition
+      };
+
+      // Add the chord to the appropriate column
+      columns.value[columnIndex].chords.push(newChord);
+
+      // Clear the input field for the next chord
+      fingeringInput.value = '';
+    }
+
+    isLoading.value = false;
+  };
+
   return {
     chordInput,
+    fingeringInput,
     isLoading,
     errorMessage,
     currentChord,
     handleChordSubmit,
+    handleFingeringSubmit,
     removeChord,
   };
 }
