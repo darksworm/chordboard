@@ -267,7 +267,7 @@ const handleSuggestionNavigation = (event: KeyboardEvent) => {
             @keydown="(e) => {
               // Handle both modal escape and suggestion navigation
               handleKeyDown(e);
-              if (showSuggestions.value) {
+              if (showSuggestions) {
                 handleSuggestionNavigation(e);
               }
             }"
