@@ -50,7 +50,7 @@ const {
   handleKeyDown: handleSuggestionKeyDown,
   selectSuggestion,
   addSuggestionToBoard,
-} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, gridColumns);
+} = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition);
 
 // Initialize board persistence
 const {
