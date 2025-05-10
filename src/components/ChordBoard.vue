@@ -482,21 +482,21 @@ button:disabled {
 
 .selected-cell {
   z-index: 3;
-  box-shadow: 0 0 0 2px #4CAF50, 0 0 20px rgba(76, 175, 80, 0.5);
+  box-shadow: 0 0 0 2px #ff3333, 0 0 20px rgba(255, 0, 0, 0.5);
   border-radius: 8px;
-  background-color: rgba(76, 175, 80, 0.1);
+  background-color: rgba(255, 0, 0, 0.1);
   animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 2px #4CAF50, 0 0 20px rgba(76, 175, 80, 0.5);
+    box-shadow: 0 0 0 2px #ff3333, 0 0 20px rgba(255, 0, 0, 0.5);
   }
   50% {
-    box-shadow: 0 0 0 4px #4CAF50, 0 0 30px rgba(76, 175, 80, 0.7);
+    box-shadow: 0 0 0 4px #ff3333, 0 0 30px rgba(255, 0, 0, 0.7);
   }
   100% {
-    box-shadow: 0 0 0 2px #4CAF50, 0 0 20px rgba(76, 175, 80, 0.5);
+    box-shadow: 0 0 0 2px #ff3333, 0 0 20px rgba(255, 0, 0, 0.5);
   }
 }
 
