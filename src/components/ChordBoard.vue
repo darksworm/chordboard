@@ -209,28 +209,20 @@ const removeChordAndSave = (id: string) => {
     <!-- Modal for adding chords -->
     <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
       <div class="modal-content" :class="{ 'loading': isLoading }">
-        <div class="modal-header">
-          <h3>Add Chord</h3>
-          <button class="close-button" @click="closeModal">×</button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="handleChordSubmitAndSave()">
-            <input
-              ref="inputRef"
-              v-model="chordInput"
-              type="text"
-              placeholder="Enter chord name (e.g., Am) or fingering pattern (e.g., x02110)"
-              :disabled="isLoading"
-            />
-            <button type="submit" :disabled="isLoading">
-              {{ isLoading ? 'Loading...' : 'Add Chord' }}
-            </button>
-          </form>
-
-          <div class="error-container">
-            <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-          </div>
-        </div>
+        <form @submit.prevent="handleChordSubmitAndSave()">
+          <input
+            ref="inputRef"
+            v-model="chordInput"
+            type="text"
+            placeholder="Enter chord name (e.g., Am) or fingering pattern (e.g., x02110)"
+            :disabled="isLoading"
+          />
+          <button type="submit" :disabled="isLoading" class="hidden-submit"></button>
+        </form>
+      </div>
+      <!-- Error message container positioned below the input -->
+      <div class="error-container" v-show="errorMessage">
+        <p class="error-message">{{ errorMessage }}</p>
       </div>
     </div>
 
@@ -508,12 +500,29 @@ button:disabled {
 }
 
 .error-message {
-  color: #ff6b6b;
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
+  color: #ff3333;
+  margin: 0;
+  font-size: 16px;
   line-height: 1.5;
-  text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
   display: block;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+  animation: errorGlow 1.5s infinite;
+  width: 100%;
+  text-align: center;
+  word-break: break-word;
+}
+
+@keyframes errorGlow {
+  0% {
+    text-shadow: 0 0 5px rgba(255, 0, 0, 0.7);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 0, 0, 1);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(255, 0, 0, 0.7);
+  }
 }
 
 /* Empty cell styles */
@@ -578,140 +587,65 @@ button:disabled {
   border-color: #4CAF50; /* Green border on hover */
 }
 
-/* Modal styles - Rock themed */
+/* Modal styles - Modern minimal */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.5); /* 10% darker backdrop */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(5px);
 }
 
 .modal-content {
-  background-color: #1a1a1a;
-  border-radius: 4px;
-  box-shadow: 0 0 30px rgba(255, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.5);
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.05);
   width: 90%;
-  max-width: 500px;
-  padding: 1.5rem;
+  max-width: 600px;
+  padding: 0;
   position: relative;
-  border: 1px solid #333;
-  color: #fff;
+  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
 .modal-content.loading {
   opacity: 0.8;
 }
 
-.modal-header {
+.modal-content form {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #333;
-  padding-bottom: 0.75rem;
+  width: 100%;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-}
-
-.close-button {
-  background: none;
-  border: 1px solid #444;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: #fff;
-  transition: all 0.2s;
-}
-
-.close-button:hover {
-  background-color: #ff3333;
-  border-color: #ff3333;
-  transform: scale(1.1);
-}
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  background-color: #222;
-  border-radius: 4px;
-  border: 1px solid #333;
-}
-
-.form-section h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  color: #ddd;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.modal-body form {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.modal-body input {
+.modal-content input {
   flex: 1;
-  padding: 0.75rem;
-  border: 1px solid #444;
-  border-radius: 4px;
-  font-size: 1rem;
-  background-color: #2a2a2a;
-  color: #fff;
+  padding: 16px 20px;
+  border: none;
+  font-size: 16px;
+  background-color: #111;
+  color: white;
+  width: 100%;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.2);
+  opacity: 0.7;
 }
 
-.modal-body input:focus {
+.modal-content input:focus {
   outline: none;
-  border-color: #ff3333;
-  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), 0 0 0 1px rgba(255, 0, 0, 0.5) inset;
 }
 
-.modal-body button {
-  background-color: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 0.75rem 1.5rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.2s;
-}
-
-.modal-body button:hover:not(:disabled) {
-  background-color: #ff3333;
-  border-color: #ff3333;
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+.hidden-submit {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  display: none;
 }
 
 .form-actions {
@@ -736,9 +670,17 @@ button:disabled {
 }
 
 .error-container {
-  min-height: 35px; /* Increased height to fully accommodate the error message with font height */
-  margin-top: 0.5rem;
+  min-height: 24px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
+  background-color: rgba(255, 51, 51, 0.1);
+  border-radius: 8px;
+  margin-top: 10px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.15);
+  z-index: 1001; /* Ensure it's above the modal backdrop */
+  position: relative;
 }
 </style>
