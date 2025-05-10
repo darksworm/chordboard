@@ -280,17 +280,17 @@ const removeChordAndSave = (id: string) => {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100%;
-  padding: 1rem;
+  height: 100vh;
+  padding: 0;
 }
 
 .chord-grid {
   position: relative;
   width: 100%;
-  height: calc(100vh - 150px);
+  height: 100vh;
   border: 1px dashed #ccc;
-  border-radius: 8px;
-  margin-top: 0.5rem;
+  border-radius: 0;
+  margin-top: 0;
   overflow-y: auto;
   overflow-x: hidden;
   background-color: #f9f9f9;
@@ -453,9 +453,10 @@ button:disabled {
 }
 
 .error-message {
-  color: #d32f2f;
+  color: #ff6b6b;
   margin-top: 0.5rem;
   font-size: 0.9rem;
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
 }
 
 /* Empty cell styles */
@@ -520,28 +521,31 @@ button:disabled {
   border-color: #4CAF50; /* Green border on hover */
 }
 
-/* Modal styles */
+/* Modal styles - Rock themed */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(3px);
 }
 
 .modal-content {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  box-shadow: 0 0 30px rgba(255, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.5);
   width: 90%;
   max-width: 500px;
   padding: 1.5rem;
   position: relative;
+  border: 1px solid #333;
+  color: #fff;
 }
 
 .modal-content.loading {
@@ -552,17 +556,24 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.75rem;
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
 }
 
 .close-button {
   background: none;
-  border: none;
+  border: 1px solid #444;
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
@@ -571,11 +582,15 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 4px;
+  color: #fff;
+  transition: all 0.2s;
 }
 
 .close-button:hover {
-  background-color: #f0f0f0;
+  background-color: #ff3333;
+  border-color: #ff3333;
+  transform: scale(1.1);
 }
 
 .modal-body {
@@ -592,14 +607,35 @@ button:disabled {
 .modal-body input {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ccc;
+  border: 1px solid #444;
   border-radius: 4px;
   font-size: 1rem;
+  background-color: #2a2a2a;
+  color: #fff;
 }
 
 .modal-body input:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+  border-color: #ff3333;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.modal-body button {
+  background-color: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.modal-body button:hover:not(:disabled) {
+  background-color: #ff3333;
+  border-color: #ff3333;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
 }
 </style>
