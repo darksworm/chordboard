@@ -209,7 +209,7 @@ const removeChordAndSave = (id: string) => {
     <!-- Modal for adding chords -->
     <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
       <div class="modal-content" :class="{ 'loading': isLoading }">
-        <form @submit.prevent="handleChordSubmitAndSave()">
+        <form @submit.prevent="handleChordSubmitAndSave().then(focusInput)">
           <input
             ref="inputRef"
             v-model="chordInput"
@@ -500,14 +500,13 @@ button:disabled {
 }
 
 .error-message {
-  color: #ff3333;
+  color: white; /* Changed to white for better contrast with red background */
   margin: 0;
   font-size: 16px;
   line-height: 1.5;
   display: block;
   font-weight: 600;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
-  animation: errorGlow 1.5s infinite;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7); /* Changed to black shadow for better visibility */
   width: 100%;
   text-align: center;
   word-break: break-word;
@@ -632,13 +631,13 @@ button:disabled {
   color: white;
   width: 100%;
   transition: all 0.2s ease;
-  box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.2);
+  box-shadow: none;
   opacity: 0.7;
 }
 
 .modal-content input:focus {
   outline: none;
-  box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), 0 0 0 1px rgba(255, 0, 0, 0.5) inset;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
 .hidden-submit {
@@ -648,39 +647,21 @@ button:disabled {
   display: none;
 }
 
-.form-actions {
-  margin-top: 0.75rem;
-  display: flex;
-  justify-content: center;
-}
-
-.secondary-button {
-  background-color: #333;
-  color: #ddd;
-  border: 1px solid #555;
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.secondary-button:hover:not(:disabled) {
-  background-color: #444;
-  border-color: #666;
-}
-
 .error-container {
   min-height: 24px;
   padding: 12px 20px;
   display: flex;
   align-items: center;
-  background-color: rgba(255, 51, 51, 0.1);
+  background-color: rgba(255, 51, 51, 0.8); /* Increased opacity for better contrast */
   border-radius: 8px;
-  margin-top: 10px;
   max-width: 600px;
   width: 90%;
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
   z-index: 1001; /* Ensure it's above the modal backdrop */
-  position: relative;
+  position: absolute; /* Position relative to the modal-backdrop */
+  top: 50%; /* Align with the center of the screen */
+  left: 50%;
+  transform: translate(-50%, 12px); /* Center horizontally and position below the modal */
+  margin-top: 20px; /* Additional space between modal and error container */
 }
 </style>
