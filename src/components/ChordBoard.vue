@@ -163,8 +163,11 @@ const isFingeringPattern = (input: string): boolean => {
 
 // Wrap chord operations to trigger saving
 const handleChordSubmitAndSave = async () => {
-  // Hide suggestions dropdown
+  // Hide suggestions dropdown and clear search state
   showSuggestions.value = false;
+  searchSuggestions.value = [];
+  selectedSuggestionIndex.value = 0;
+  noResultsFound.value = false;
 
   // Determine if the input is a fingering pattern
   const isFingering = isFingeringPattern(chordInput.value);
@@ -634,7 +637,7 @@ button:disabled {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5); /* 10% darker backdrop */
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(5px);
@@ -645,6 +648,7 @@ button:disabled {
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.05);
   width: 90%;
+  margin-top: 26vh;
   max-width: 600px;
   padding: 0;
   position: relative;
