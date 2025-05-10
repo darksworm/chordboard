@@ -178,7 +178,9 @@ const removeChordAndSave = (id: string) => {
               {{ isLoading ? 'Loading...' : 'Add Chord' }}
             </button>
           </form>
-          <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+          <div class="error-container">
+            <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -456,7 +458,9 @@ button:disabled {
   color: #ff6b6b;
   margin-top: 0.5rem;
   font-size: 0.9rem;
+  line-height: 1.5;
   text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+  display: block;
 }
 
 /* Empty cell styles */
@@ -637,5 +641,12 @@ button:disabled {
   border-color: #ff3333;
   transform: scale(1.05);
   box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+}
+
+.error-container {
+  min-height: 35px; /* Increased height to fully accommodate the error message with font height */
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
 }
 </style>
