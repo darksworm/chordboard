@@ -1,5 +1,5 @@
-import { ref, type Ref, onMounted } from 'vue';
-import { fetchChordData, fetchChordByFingering, type Chord as ChordType } from '../services/chordserverapi';
+import { ref, type Ref, onMounted, watch } from 'vue';
+import { fetchChordData, fetchChordByFingering, fetchSearchSuggestions, type Chord as ChordType } from '../services/chordserverapi';
 import { type ChordInGrid, type GridColumn, generateChordId } from '../types/chord-board';
 import {eventBus, useEvent} from "@/composables/useEventBus.ts";
 
@@ -13,6 +13,13 @@ export function useChordManagement(
   const isLoading = ref(false);
   const errorMessage = ref('');
   const currentChord = ref<ChordType | null>(null);
+
+  // Search suggestions
+  const searchSuggestions = ref<ChordType[]>([]);
+  const selectedSuggestionIndex = ref(0);
+  const showSuggestions = ref(false);
+  const noResultsFound = ref(false);
+  let debounceTimeout: number | null = null;
 
   // Handle chord submission
   const handleChordSubmit = async (specificColumnIndex?: number, specificRow?: number) => {
@@ -190,6 +197,86 @@ export function useChordManagement(
     eventBus.emit('command:boardPersistence:save');
   };
 
+  // Fetch search suggestions with debounce
+  const fetchSuggestions = async (query: string) => {
+    if (!query.trim()) {
+      searchSuggestions.value = [];
+      showSuggestions.value = false;
+      noResultsFound.value = false;
+      return;
+    }
+
+    // Clear previous timeout
+    if (debounceTimeout !== null) {
+      clearTimeout(debounceTimeout);
+    }
+
+    // Set new timeout (300ms debounce)
+    debounceTimeout = setTimeout(async () => {
+      const result = await fetchSearchSuggestions(query);
+
+      if (result.isOk()) {
+        // Limit to top 5 suggestions
+        searchSuggestions.value = result.value.slice(0, 5);
+        selectedSuggestionIndex.value = 0; // Always select the first suggestion
+        showSuggestions.value = searchSuggestions.value.length > 0;
+        noResultsFound.value = query.trim().length > 0 && searchSuggestions.value.length === 0;
+      } else {
+        searchSuggestions.value = [];
+        showSuggestions.value = false;
+        noResultsFound.value = false;
+      }
+    }, 300) as unknown as number;
+  };
+
+  // Handle keyboard navigation for suggestions
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!showSuggestions.value) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        selectedSuggestionIndex.value = (selectedSuggestionIndex.value + 1) % searchSuggestions.value.length;
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        selectedSuggestionIndex.value = (selectedSuggestionIndex.value - 1 + searchSuggestions.value.length) % searchSuggestions.value.length;
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (searchSuggestions.value.length > 0) {
+          selectSuggestion(selectedSuggestionIndex.value);
+          // Trigger form submission by finding and clicking the hidden submit button
+          setTimeout(() => {
+            const submitButton = document.querySelector('.hidden-submit') as HTMLButtonElement;
+            if (submitButton) {
+              submitButton.click();
+            }
+          }, 0);
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        showSuggestions.value = false;
+        break;
+    }
+  };
+
+  // Select a suggestion by index
+  const selectSuggestion = (index: number) => {
+    if (index >= 0 && index < searchSuggestions.value.length) {
+      const suggestion = searchSuggestions.value[index];
+      chordInput.value = `${suggestion.key}${suggestion.suffix}`;
+      showSuggestions.value = false;
+      noResultsFound.value = false;
+    }
+  };
+
+  // Watch for changes in the chord input to fetch suggestions
+  watch(chordInput, (newValue) => {
+    fetchSuggestions(newValue);
+  });
+
   onMounted(() => {
     useEvent('command:chordManagement:move', handleChordMove);
   });
@@ -255,6 +342,13 @@ export function useChordManagement(
     handleChordSubmit,
     handleFingeringSubmit,
     removeChord,
+    // Search suggestions
+    searchSuggestions,
+    selectedSuggestionIndex,
+    showSuggestions,
+    noResultsFound,
+    handleKeyDown,
+    selectSuggestion,
   };
 }
 

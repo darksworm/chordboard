@@ -13,6 +13,35 @@ export interface Position {
   capo?: string
 }
 
+export interface SearchResult {
+  chords: Chord[]
+}
+
+/**
+ * Fetches search suggestions from the API based on the query
+ * @param query The search query (chord name or fingering pattern)
+ * @returns An array of chord suggestions or an error message
+ */
+export const fetchSearchSuggestions = async (query: string): Promise<Result<Chord[], string>> => {
+  if (!query.trim()) {
+    return ok([]);
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const response = await fetch(`${apiUrl}/search/${encodeURIComponent(query)}`);
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return ok([]); // Return empty array for no results
+    } else {
+      return err(`Error: ${response.statusText}`);
+    }
+  }
+
+  const results = await response.json();
+  return ok(Array.isArray(results) ? results : []);
+};
+
 
 /**
  * Fetches chord data from the API by chord name

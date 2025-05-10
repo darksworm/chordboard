@@ -42,6 +42,13 @@ const {
   handleChordSubmit,
   handleFingeringSubmit,
   removeChord,
+  // Search suggestions
+  searchSuggestions,
+  selectedSuggestionIndex,
+  showSuggestions,
+  noResultsFound,
+  handleKeyDown: handleSuggestionKeyDown,
+  selectSuggestion,
 } = useChordManagement(columns, findEmptyGridPosition, gridToPixelPosition, gridColumns);
 
 // Initialize board persistence
@@ -143,6 +150,8 @@ const closeModal = () => {
   chordInput.value = '';
   fingeringInput.value = '';
   errorMessage.value = '';
+  showSuggestions.value = false;
+  noResultsFound.value = false;
 };
 
 // Check if input is a fingering pattern (6 symbols from 0-9, a-z, x)
@@ -154,6 +163,9 @@ const isFingeringPattern = (input: string): boolean => {
 
 // Wrap chord operations to trigger saving
 const handleChordSubmitAndSave = async () => {
+  // Hide suggestions dropdown
+  showSuggestions.value = false;
+
   // Determine if the input is a fingering pattern
   const isFingering = isFingeringPattern(chordInput.value);
 
@@ -216,9 +228,37 @@ const removeChordAndSave = (id: string) => {
             type="text"
             placeholder="Enter chord name (e.g., Am) or fingering pattern (e.g., x02110)"
             :disabled="isLoading"
+            :class="{ 'rounded-bottom': !showSuggestions && !noResultsFound }"
+            @keydown="(e) => {
+              // Handle both modal escape and suggestion navigation
+              handleKeyDown(e);
+              if (showSuggestions) {
+                handleSuggestionKeyDown(e);
+              }
+            }"
           />
           <button type="submit" :disabled="isLoading" class="hidden-submit"></button>
         </form>
+
+        <!-- Search suggestions dropdown -->
+        <div class="suggestions-dropdown" v-if="showSuggestions && searchSuggestions.length > 0">
+          <div
+            v-for="(suggestion, index) in searchSuggestions"
+            :key="`${suggestion.key}${suggestion.suffix}-${index}`"
+            class="suggestion-item"
+            :class="{ 'selected': index === selectedSuggestionIndex }"
+            @click="selectSuggestion(index); focusInput()"
+          >
+            <span class="suggestion-key">{{ suggestion.key }}</span>
+            <span class="suggestion-suffix">{{ suggestion.suffix }}</span>
+            <span v-if="suggestion.positions && suggestion.positions.length > 0" class="suggestion-fingering">{{ suggestion.positions[0].frets }}</span>
+          </div>
+        </div>
+
+        <!-- No results message -->
+        <div class="no-results-message" v-if="noResultsFound">
+          No results found
+        </div>
       </div>
       <!-- Error message container positioned below the input -->
       <div class="error-container" v-show="errorMessage">
@@ -299,7 +339,6 @@ const removeChordAndSave = (id: string) => {
                 width: `${GRID_CELL_WIDTH}px`,
                 height: `${GRID_CELL_HEIGHT}px`
               }"
-              v-if="!isPositionOccupied(row-1, columnIndex)"
             >
               <button
                 class="add-button"
@@ -609,7 +648,7 @@ button:disabled {
   max-width: 600px;
   padding: 0;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.2s ease;
 }
 
@@ -633,11 +672,19 @@ button:disabled {
   transition: all 0.2s ease;
   box-shadow: none;
   opacity: 0.7;
+  border-radius: 12px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .modal-content input:focus {
   outline: none;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content input.rounded-bottom {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .hidden-submit {
@@ -663,5 +710,74 @@ button:disabled {
   left: 50%;
   transform: translate(-50%, 12px); /* Center horizontally and position below the modal */
   margin-top: 20px; /* Additional space between modal and error container */
+}
+
+/* Suggestions dropdown styles */
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: #111;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 1002;
+  max-height: 250px;
+  overflow-y: hidden;
+  margin-top: -1px; /* Connect seamlessly with input */
+}
+
+.suggestion-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  color: white;
+  opacity: 0.8;
+}
+
+.suggestion-item:hover, .suggestion-item.selected {
+  background-color: #333;
+  opacity: 1;
+}
+
+.suggestion-key {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.suggestion-suffix {
+  opacity: 0.8;
+}
+
+.suggestion-fingering {
+  opacity: 0.7;
+  margin-left: auto;
+  font-family: monospace;
+  font-size: 14px;
+  color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* No results message */
+.no-results-message {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  padding: 12px 20px;
+  color: white;
+  opacity: 0.8;
+  text-align: center;
+  background-color: #111;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  font-style: italic;
+  z-index: 1002;
+  margin-top: -1px; /* Connect seamlessly with input */
 }
 </style>
