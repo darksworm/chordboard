@@ -6,6 +6,9 @@ import {
 import { type GridColumn } from '../types/chord-board';
 import { eventBus } from './useEventBus';
 
+// Symbol used to mark elements that already have drag-and-drop functionality
+const DND_INITIALIZED = Symbol('dnd-initialized');
+
 export function useDragAndDrop(
   columns: Ref<GridColumn[]>,
   gridRef: Ref<HTMLElement | null>,
@@ -19,11 +22,20 @@ export function useDragAndDrop(
   const setupDraggable = (element: HTMLElement, chordId: string) => {
     if (!element) return;
 
+    // Check if element already has drag-and-drop functionality
+    if ((element as any)[DND_INITIALIZED]?.draggable) return;
+
     // Make the element draggable
     const cleanup = draggable({
       element,
       dragHandle: element
     });
+
+    // Mark element as initialized
+    (element as any)[DND_INITIALIZED] = {
+      ...(element as any)[DND_INITIALIZED],
+      draggable: true
+    };
 
     // Store the cleanup function
     cleanupFunctions.value.push(cleanup);
@@ -32,6 +44,9 @@ export function useDragAndDrop(
   // Function to set up draggable for a column
   const setupColumnDraggable = (element: HTMLElement, columnId: string, columnIndex: number) => {
     if (!element) return;
+
+    // Check if element already has column draggable functionality
+    if ((element as any)[DND_INITIALIZED]?.columnDraggable) return;
 
     // Find the drag handle element
     const dragHandleSelector = `[data-column-drag-handle="${columnId}"]`;
@@ -45,6 +60,12 @@ export function useDragAndDrop(
       dragHandle: dragHandle as HTMLElement
     });
 
+    // Mark element as initialized
+    (element as any)[DND_INITIALIZED] = {
+      ...(element as any)[DND_INITIALIZED],
+      columnDraggable: true
+    };
+
     // Store the cleanup function
     cleanupFunctions.value.push(cleanup);
   };
@@ -52,6 +73,9 @@ export function useDragAndDrop(
   // Function to set up a column content area as a drop target for chords
   const setupColumnDropTarget = (element: HTMLElement, columnId: string, columnIndex: number) => {
     if (!element) return;
+
+    // Check if element already has column drop target functionality
+    if ((element as any)[DND_INITIALIZED]?.columnDropTarget) return;
 
     // Make the column content area a drop target for chords
     const cleanup = dropTargetForElements({
@@ -157,6 +181,12 @@ export function useDragAndDrop(
       }
     });
 
+    // Mark element as initialized
+    (element as any)[DND_INITIALIZED] = {
+      ...(element as any)[DND_INITIALIZED],
+      columnDropTarget: true
+    };
+
     // Store the cleanup function
     cleanupFunctions.value.push(cleanup);
   };
@@ -164,6 +194,9 @@ export function useDragAndDrop(
   // Function to set up the grid as a drop target for columns
   const setupGridDropTarget = () => {
     if (!gridRef.value) return;
+
+    // Check if grid already has drop target functionality
+    if ((gridRef.value as any)[DND_INITIALIZED]?.gridDropTarget) return;
 
     // Make the grid a drop target for columns
     const cleanup = dropTargetForElements({
@@ -189,6 +222,12 @@ export function useDragAndDrop(
         moveColumn(columnIndex, targetColumnIndex);
       }
     });
+
+    // Mark grid element as initialized
+    (gridRef.value as any)[DND_INITIALIZED] = {
+      ...(gridRef.value as any)[DND_INITIALIZED],
+      gridDropTarget: true
+    };
 
     // Store the cleanup function
     cleanupFunctions.value.push(cleanup);
