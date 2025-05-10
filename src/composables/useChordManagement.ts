@@ -52,7 +52,7 @@ export function useChordManagement(
         let minChords = Infinity;
 
         // If gridColumns is provided, prefer visible columns
-        const visibleColumns = gridColumns?.value || columns.value.length;
+        const visibleColumns = columns.value.length;
 
         // First try to find a column within the visible range
         for (let i = 0; i < Math.min(visibleColumns, columns.value.length); i++) {
