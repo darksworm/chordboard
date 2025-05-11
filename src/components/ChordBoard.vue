@@ -9,11 +9,15 @@ import { useColumnManagement } from '../composables/useColumnManagement';
 import { useChordManagement } from '../composables/useChordManagement';
 import { useDragAndDrop } from '../composables/useDragAndDrop';
 import { useBoardPersistence } from '../composables/useBoardPersistence';
+import { healthcheck } from '../services/chordserverapi';
 
 // Setup refs
 const inputRef = ref<HTMLInputElement | null>(null);
 const gridRef = ref<HTMLElement | null>(null);
 const columns = ref<GridColumn[]>([]);
+
+// Healthcheck state
+const isHealthcheckLoading = ref(false);
 
 // Modal state
 const showModal = ref(false);
@@ -114,6 +118,18 @@ onMounted(() => {
 
   // Add event listener for Escape key to close modal
   window.addEventListener('keydown', handleKeyDown);
+
+  // Perform healthcheck to wake up the server
+  isHealthcheckLoading.value = true;
+  healthcheck()
+    .then(() => {
+      // Healthcheck complete, regardless of success or failure
+      isHealthcheckLoading.value = false;
+    })
+    .catch(() => {
+      // Ensure loading state is reset even if there's an unhandled error
+      isHealthcheckLoading.value = false;
+    });
 });
 
 // Clean up when component unmounts
@@ -388,9 +404,45 @@ const handleSuggestionNavigation = (event: KeyboardEvent) => {
 
       </div>
     </div>
+    <!-- Healthcheck loading indicator -->
+    <div v-if="isHealthcheckLoading" class="healthcheck-loading">
+      <div class="loading-spinner"></div>
+      <span>Waking up server...</span>
+    </div>
   </div>
 </template>
 
 <style>
 @import '../assets/ChordBoard.css';
+
+/* Healthcheck loading indicator styles */
+.healthcheck-loading {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

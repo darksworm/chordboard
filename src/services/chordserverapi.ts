@@ -18,6 +18,25 @@ export interface SearchResult {
 }
 
 /**
+ * Sends a request to the healthcheck endpoint to wake up the server
+ * @returns A promise that resolves when the healthcheck is complete
+ */
+export const healthcheck = async (): Promise<Result<boolean, string>> => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  try {
+    const response = await fetch(`${apiUrl}/healthcheck`);
+
+    if (!response.ok) {
+      return err(`Healthcheck failed: ${response.statusText}`);
+    }
+
+    return ok(true);
+  } catch (error) {
+    return err(`Healthcheck error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
+/**
  * Fetches search suggestions from the API based on the query
  * @param query The search query (chord name or fingering pattern)
  * @returns An array of chord suggestions or an error message
