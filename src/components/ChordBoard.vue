@@ -256,14 +256,15 @@ const handleSelectSuggestion = (index: number) => {
 const handleSuggestionNavigation = (event: KeyboardEvent) => {
   if (!showSuggestions.value) return;
 
-  // First let the original handler handle navigation (up/down arrows)
-  handleSuggestionKeyDown(event);
-
   // Then handle Enter key ourselves to use our wrapper function
   if (event.key === 'Enter' && searchSuggestions.value.length > 0) {
     event.preventDefault();
     handleSelectSuggestion(selectedSuggestionIndex.value);
+    return;
   }
+
+  // First let the original handler handle navigation (up/down arrows)
+  handleSuggestionKeyDown(event);
 };
 </script>
 
