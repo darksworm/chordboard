@@ -413,37 +413,7 @@ const handleSuggestionNavigation = (event: KeyboardEvent) => {
   </div>
 </template>
 
+<!-- all styles live in the css file below-->
 <style>
 @import '../assets/ChordBoard.css';
-
-/* Healthcheck loading indicator styles */
-.healthcheck-loading {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px 15px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  z-index: 1000;
-  font-size: 14px;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-  margin-right: 10px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>
