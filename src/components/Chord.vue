@@ -6,15 +6,15 @@ import type {Chord} from "@/services/chordserverapi.ts";
 // Define props and emits
 const props = withDefaults(defineProps<{
   chord: Chord; // Required
-  position?: number; // Optional
+  selectedFingering?: number; // Optional
 }>(), {
-  position: 0
+  selectedFingering: 0
 })
 
 const emit = defineEmits(['positionChanged']);
 
 // Create internal position state
-const currentPosition = ref(props.position);
+const currentPosition = ref(props.selectedFingering);
 
 // Reference to the chord container
 const chordContainer = ref<HTMLElement | null>(null);
@@ -119,11 +119,11 @@ const renderChord = () => {
 
 // Watch for changes in props to re-render the chord
 watch(() => props.chord, () => {
-  currentPosition.value = props.position;
+  currentPosition.value = props.selectedFingering;
   renderChord();
 }, {immediate: true});
 
-watch(() => props.position, (newPosition) => {
+watch(() => props.selectedFingering, (newPosition) => {
   // only re-render if the position does not match the internal one
   if (currentPosition.value !== newPosition) {
     currentPosition.value = newPosition;
