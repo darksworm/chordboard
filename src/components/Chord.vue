@@ -41,7 +41,7 @@ const renderChord = () => {
   const chord = new ChordBox(chordContainer.value, {
     width: 200,
     height: 240,
-    showTuning: true
+    showTuning: false,
   });
 
   // Handle API response format
@@ -52,8 +52,15 @@ const renderChord = () => {
   // Update chord title
   chordTitle.value = `${props.chord.key}${props.chord.suffix || ''}`;
 
-  // Convert frets string to positions array
-  const frets = position.frets.split('');
+  // Convert frets string to positions array and convert letters to numbers
+  const frets = position.frets.split('').map(fret => {
+    if (fret === 'x') return fret;
+    if (fret.match(/[a-f]/i)) {
+      // Convert letters to numbers (a=10, b=11, etc.)
+      return String(fret.toLowerCase().charCodeAt(0) - 87);
+    }
+    return fret;
+  });
 
   // Get fingers if available
   const fingers = position.fingers ? position.fingers.split('') : null;
@@ -61,7 +68,6 @@ const renderChord = () => {
   // Parse barres if present
   const barres: { fromString: number; toString: number; fret: number }[] = [];
   const barredPositions = new Set<string>();
-
 
   // Find both lowest and highest frets in one pass
   const fretRange = frets.reduce((range, fret) => {
@@ -85,28 +91,24 @@ const renderChord = () => {
 
   // Determine the appropriate position to display on the fretboard
   let positionOffset = 0;
-  let positionText = 0;
 
   // Only adjust position if we have actual frets (not all open/muted strings)
   if (lowestFret > 0) {
     // If the chord is higher up the neck (above fret 4), start display at the lowest fret minus 1
     // This ensures we have at least one empty fret before the chord
-    if (lowestFret > 4) {
+    if (lowestFret > 3) {
       positionOffset = Math.max(1, lowestFret - 1);
-      positionText = positionOffset; // Show the starting position number
-    } else if (highestFret > 5) {
+    } else if (highestFret > 4) {
       // For chords that span many frets but start low on the neck,
       // we may need to adjust to show the full range
       positionOffset = Math.max(1, lowestFret - 1);
-      positionText = positionOffset;
     }
 
     // If the chord spans more than 4 frets and the position would make it go beyond view
     const fretSpan = highestFret - lowestFret;
-    if (fretSpan > 4) {
+    if (fretSpan > 3) {
       // Adjust to ensure we can see the full chord
       positionOffset = Math.max(1, lowestFret - 1);
-      positionText = positionOffset;
     }
   }
 
@@ -166,8 +168,8 @@ const renderChord = () => {
   chord.draw({
     chord: chordPositions as VexBoxChord,
     barres,
-    position: 4,
-    positionText: positionText
+    position: Math.max(positionOffset, 0),
+    positionText: 0
   });
 };
 
