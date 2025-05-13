@@ -17,8 +17,7 @@
   border: 1px dashed #ccc;
   border-radius: 0;
   margin-top: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: auto; /* Change from overflow-y: auto and overflow-x: hidden to just overflow: auto */
   background-color: #f9f9f9;
 }
 
