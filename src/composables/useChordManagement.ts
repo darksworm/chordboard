@@ -1,25 +1,29 @@
-import { ref, type Ref, onMounted, watch } from 'vue';
-import { fetchChordData, fetchChordByFingering, fetchSearchSuggestions, type Chord as ChordType } from '../services/chordserverapi';
+import { ref, type Ref, onMounted } from 'vue';
+import { fetchChordData, fetchChordByFingering, type Chord as ChordType } from '../services/chordserverapi';
 import { type ChordInGrid, type GridColumn, generateChordId } from '../types/chord-board';
-import {eventBus, useEvent} from "@/composables/useEventBus.ts";
+import { eventBus, useEvent } from "@/composables/useEventBus.ts";
+import { useChordSearch } from './useChordSearch';
 
 export function useChordManagement(
   columns: Ref<GridColumn[]>,
   findEmptyGridPosition: (columnIndex?: number) => { row: number; col: number },
   gridToPixelPosition: (row: number, col: number) => { x: number; y: number },
 ) {
-  const chordInput = ref('');
-  const fingeringInput = ref('');
-  const isLoading = ref(false);
-  const errorMessage = ref('');
-  const currentChord = ref<ChordType | null>(null);
+  // Use the chord search composable
+  const {
+    chordInput,
+    fingeringInput,
+    isLoading,
+    errorMessage,
+    searchSuggestions,
+    selectedSuggestionIndex,
+    showSuggestions,
+    noResultsFound,
+    handleKeyDown,
+    clearSearchState
+  } = useChordSearch();
 
-  // Search suggestions
-  const searchSuggestions = ref<ChordType[]>([]);
-  const selectedSuggestionIndex = ref(0);
-  const showSuggestions = ref(false);
-  const noResultsFound = ref(false);
-  let debounceTimeout: number | null = null;
+  const currentChord = ref<ChordType | null>(null);
 
   // Handle chord submission
   const handleChordSubmit = async (specificColumnIndex?: number, specificRow?: number) => {
@@ -86,7 +90,8 @@ export function useChordManagement(
         id: generateChordId(),
         chord: fetchedChord.value,
         position: pixelPosition,
-        gridPosition: gridPosition
+        gridPosition: gridPosition,
+        selectedFingering: 0
       };
 
       // Add the chord to the appropriate column
@@ -128,7 +133,7 @@ export function useChordManagement(
     for (let i = 0; i < columns.value[sourceColumnIndex].chords.length; i++) {
       const chord = columns.value[sourceColumnIndex].chords[i];
       if (chord.gridPosition.col === data.fromPosition.colIndex &&
-          chord.gridPosition.row === data.fromPosition.rowIndex) {
+        chord.gridPosition.row === data.fromPosition.rowIndex) {
         sourceChord = chord;
         sourceChordIndex = i;
         break;
@@ -146,7 +151,7 @@ export function useChordManagement(
     for (let i = 0; i < columns.value[targetColumnIndex].chords.length; i++) {
       const chord = columns.value[targetColumnIndex].chords[i];
       if (chord.gridPosition.col === data.toPosition.colIndex &&
-          chord.gridPosition.row === data.toPosition.rowIndex) {
+        chord.gridPosition.row === data.toPosition.rowIndex) {
         targetChord = chord;
         targetChordIndex = i;
         break;
@@ -197,65 +202,6 @@ export function useChordManagement(
     eventBus.emit('command:boardPersistence:save');
   };
 
-  // Fetch search suggestions with debounce
-  const fetchSuggestions = async (query: string) => {
-    if (!query.trim()) {
-      searchSuggestions.value = [];
-      showSuggestions.value = false;
-      noResultsFound.value = false;
-      return;
-    }
-
-    // Clear previous timeout
-    if (debounceTimeout !== null) {
-      clearTimeout(debounceTimeout);
-    }
-
-    // Set new timeout (300ms debounce)
-    debounceTimeout = setTimeout(async () => {
-      const result = await fetchSearchSuggestions(query);
-
-      if (result.isOk()) {
-        // Limit to top 5 suggestions
-        searchSuggestions.value = result.value.slice(0, 5);
-        selectedSuggestionIndex.value = 0; // Always select the first suggestion
-        showSuggestions.value = searchSuggestions.value.length > 0;
-        noResultsFound.value = query.trim().length > 0 && searchSuggestions.value.length === 0;
-      } else {
-        searchSuggestions.value = [];
-        showSuggestions.value = false;
-        noResultsFound.value = false;
-      }
-    }, 300) as unknown as number;
-  };
-
-  // Handle keyboard navigation for suggestions
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (!showSuggestions.value) return;
-
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        selectedSuggestionIndex.value = (selectedSuggestionIndex.value + 1) % searchSuggestions.value.length;
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        selectedSuggestionIndex.value = (selectedSuggestionIndex.value - 1 + searchSuggestions.value.length) % searchSuggestions.value.length;
-        break;
-      case 'Enter':
-        event.preventDefault();
-        if (searchSuggestions.value.length > 0) {
-          selectSuggestion(selectedSuggestionIndex.value);
-          // No need to trigger form submission as the chord is added directly to the board
-        }
-        break;
-      case 'Escape':
-        event.preventDefault();
-        showSuggestions.value = false;
-        break;
-    }
-  };
-
   // Add a suggestion directly to the board
   const addSuggestionToBoard = (suggestion: ChordType, specificColumnIndex?: number, specificRow?: number) => {
     let columnIndex: number;
@@ -279,15 +225,15 @@ export function useChordManagement(
       id: generateChordId(),
       chord: suggestion,
       position: pixelPosition,
-      gridPosition: gridPosition
+      gridPosition: gridPosition,
+      selectedFingering: 0
     };
 
     // Add the chord to the appropriate column
     columns.value[columnIndex].chords.push(newChord);
 
     // Clear search state
-    showSuggestions.value = false;
-    noResultsFound.value = false;
+    clearSearchState();
     chordInput.value = '';
 
     // Emit save event
@@ -302,11 +248,6 @@ export function useChordManagement(
       addSuggestionToBoard(suggestion);
     }
   };
-
-  // Watch for changes in the chord input to fetch suggestions
-  watch(chordInput, (newValue) => {
-    fetchSuggestions(newValue);
-  });
 
   onMounted(() => {
     useEvent('command:chordManagement:move', handleChordMove);
@@ -351,7 +292,8 @@ export function useChordManagement(
         id: generateChordId(),
         chord: fetchedChord.value,
         position: pixelPosition,
-        gridPosition: gridPosition
+        gridPosition: gridPosition,
+        selectedFingering: 0
       };
 
       // Add the chord to the appropriate column
@@ -365,20 +307,22 @@ export function useChordManagement(
   };
 
   return {
+    // Pass through search-related props
     chordInput,
     fingeringInput,
     isLoading,
     errorMessage,
     currentChord,
-    handleChordSubmit,
-    handleFingeringSubmit,
-    removeChord,
-    // Search suggestions
     searchSuggestions,
     selectedSuggestionIndex,
     showSuggestions,
     noResultsFound,
     handleKeyDown,
+
+    // Board management methods
+    handleChordSubmit,
+    handleFingeringSubmit,
+    removeChord,
     selectSuggestion,
     addSuggestionToBoard,
   };
