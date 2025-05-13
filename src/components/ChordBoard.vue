@@ -384,7 +384,11 @@ const handleSuggestionNavigation = (event: KeyboardEvent) => {
               >
                 ×
               </button>
-              <Chord :chord="chord.chord" />
+              <Chord
+                :chord="chord.chord"
+                :position="chord.selectedFingering"
+                @positionChanged="(v) => { chord.selectedFingering = v; saveState(); }"
+              />
             </div>
 
             <!-- Empty cells with plus buttons -->

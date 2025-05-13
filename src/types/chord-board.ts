@@ -9,6 +9,7 @@ export interface ChordInGrid {
   chord: ChordType;
   position: { x: number; y: number };
   gridPosition: { row: number; col: number };
+  selectedFingering: number;
 }
 
 export interface GridColumn {
