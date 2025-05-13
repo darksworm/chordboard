@@ -10,6 +10,7 @@ import { useChordManagement } from '../composables/useChordManagement';
 import { useDragAndDrop } from '../composables/useDragAndDrop';
 import { useBoardPersistence } from '../composables/useBoardPersistence';
 import { healthcheck } from '../services/chordserverapi';
+import { useBoardPanning } from "@/composables/useBoardPanning.ts";
 
 // Setup refs
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -77,6 +78,8 @@ const {
   moveColumn,
 );
 
+const { setupPanning, cleanupPanning } = useBoardPanning(gridRef);
+
 // Variable to store cleanup function for auto-save
 let cleanupAutoSave: (() => void) | null = null;
 
@@ -130,6 +133,8 @@ onMounted(() => {
       // Ensure loading state is reset even if there's an unhandled error
       isHealthcheckLoading.value = false;
     });
+
+  setupPanning();
 });
 
 // Clean up when component unmounts
@@ -138,6 +143,8 @@ onUnmounted(() => {
   if (cleanupAutoSave) {
     cleanupAutoSave();
   }
+
+  cleanupPanning();
 
   // Remove event listener for Escape key
   window.removeEventListener('keydown', handleKeyDown);
