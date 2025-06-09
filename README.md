@@ -1,6 +1,6 @@
-# src
+# Chordboard
 
-This template should help get you started developing with Vue 3 in Vite.
+A Vue 3 application for chord management and visualization.
 
 ## Recommended IDE Setup
 
@@ -52,3 +52,43 @@ npm run build
 ```sh
 npm run lint
 ```
+
+## Docker
+
+This project includes Docker support for easy deployment.
+
+### Building the Docker Image Locally
+
+```sh
+docker build -t chordboard .
+```
+
+### Running the Docker Container Locally
+
+```sh
+docker run -p 8080:80 chordboard
+```
+
+The application will be available at http://localhost:8080.
+
+## CI/CD with GitHub Actions
+
+This project uses GitHub Actions to automatically build and publish a Docker image to GitHub Container Registry (GHCR) when changes are pushed to the main branch.
+
+### Workflow
+
+The GitHub Actions workflow:
+1. Builds the application
+2. Creates a Docker image
+3. Pushes the image to GitHub Container Registry
+
+### Using the Published Docker Image
+
+Once the workflow has run successfully, you can pull and run the image from GHCR:
+
+```sh
+docker pull ghcr.io/[owner]/chordboard:latest
+docker run -p 8080:80 ghcr.io/[owner]/chordboard:latest
+```
+
+Replace `[owner]` with the GitHub username or organization name that owns the repository.
