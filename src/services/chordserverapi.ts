@@ -22,7 +22,7 @@ export interface SearchResult {
  * @returns A promise that resolves when the healthcheck is complete
  */
 export const healthcheck = async (): Promise<Result<boolean, string>> => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const apiUrl = (window as any).APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
   try {
     const response = await fetch(`${apiUrl}/healthcheck`);
 
@@ -46,7 +46,7 @@ export const fetchSearchSuggestions = async (query: string): Promise<Result<Chor
     return ok([]);
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const apiUrl = (window as any).APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const response = await fetch(`${apiUrl}/search/${encodeURIComponent(query)}`);
 
   if (!response.ok) {
@@ -72,7 +72,7 @@ export const fetchChordData = async (chordName: string): Promise<Result<Chord, s
     throw new Error('Please enter a chord name');
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const apiUrl = (window as any).APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const response = await fetch(`${apiUrl}/chords/${encodeURIComponent(chordName)}`);
 
   if (!response.ok) {
@@ -96,7 +96,7 @@ export const fetchChordByFingering = async (fingering: string): Promise<Result<C
     throw new Error('Please enter a fingering pattern');
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const apiUrl = (window as any).APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const response = await fetch(`${apiUrl}/fingers/${encodeURIComponent(fingering)}`);
 
   if (!response.ok) {

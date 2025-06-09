@@ -16,7 +16,11 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ### API Configuration
 
-The application uses environment variables to configure the API URL. You can customize the API URL by setting the `VITE_API_URL` environment variable in the appropriate `.env` file:
+The application supports two ways to configure the API URL:
+
+#### Development Environment
+
+During development, the API URL is configured using environment variables in the appropriate `.env` file:
 
 - `.env`: Default environment variables for all environments
 - `.env.development`: Environment variables for development (overrides `.env`)
@@ -27,7 +31,15 @@ Example:
 VITE_API_URL=http://localhost:8080
 ```
 
-During the build process, the environment variables are embedded in the final build, so you don't need to configure them at runtime.
+#### Production Environment (Docker)
+
+In production, the API URL can be configured at runtime by setting the `API_URL` environment variable when running the Docker container:
+
+```sh
+docker run -p 8080:80 -e API_URL=https://your-api-server.com chordboard
+```
+
+If not specified, the API URL will default to `http://localhost:8080`.
 
 ## Project Setup
 
@@ -66,10 +78,10 @@ docker build -t chordboard .
 ### Running the Docker Container Locally
 
 ```sh
-docker run -p 8080:80 chordboard
+docker run -p 8080:80 -e API_URL=https://your-api-server.com chordboard
 ```
 
-The application will be available at http://localhost:8080.
+The application will be available at http://localhost:8080, and it will connect to the API at the URL specified by the `API_URL` environment variable.
 
 ## CI/CD with GitHub Actions
 
@@ -88,7 +100,7 @@ Once the workflow has run successfully, you can pull and run the image from GHCR
 
 ```sh
 docker pull ghcr.io/[owner]/chordboard:latest
-docker run -p 8080:80 ghcr.io/[owner]/chordboard:latest
+docker run -p 8080:80 -e API_URL=https://your-api-server.com ghcr.io/[owner]/chordboard:latest
 ```
 
-Replace `[owner]` with the GitHub username or organization name that owns the repository.
+Replace `[owner]` with the GitHub username or organization name that owns the repository, and set the `API_URL` environment variable to the URL of your API server.
