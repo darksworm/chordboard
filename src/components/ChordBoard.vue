@@ -11,6 +11,7 @@ import { useDragAndDrop } from '../composables/useDragAndDrop';
 import { useBoardPersistence } from '../composables/useBoardPersistence';
 import { healthcheck } from '../services/chordserverapi';
 import { useBoardPanning } from "@/composables/useBoardPanning.ts";
+import GithubCorner from "@/components/GithubCorner.vue";
 
 // Setup refs
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -341,6 +342,7 @@ const handleSuggestionNavigation = (event: KeyboardEvent) => {
     </div>
 
     <div ref="gridRef" class="chord-grid">
+      <GithubCorner/>
       <div class="columns-container" :style="{ width: totalColumnsWidth }">
         <div
           v-for="(column, columnIndex) in columns"
